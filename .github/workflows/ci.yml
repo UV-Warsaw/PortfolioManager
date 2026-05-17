@@ -49,8 +49,10 @@ jobs:
 
       - name: Run tests
         run: |
+          set +e
           pytest tests/ -q --tb=short --cov=app --cov-report=term-missing
           exit_code=$?
+          set -e
           if [ $exit_code -eq 5 ]; then
             echo "No tests collected - skipping"
             exit 0
