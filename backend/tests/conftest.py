@@ -5,8 +5,12 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
+
+from app.core.database import get_db
+from app.main import app
 
 
 @pytest.fixture(name="db_session")
@@ -26,6 +30,28 @@ def db_session_fixture() -> Generator[Session, None, None]:
 
     with Session(engine) as session:
         yield session
+
+
+@pytest.fixture(name="client")
+def client_fixture(db_session: Session) -> Generator[TestClient, None, None]:
+    """
+    Yield a TestClient with the database overridden to the in-memory SQLite session.
+
+    Args:
+        db_session: In-memory database session fixture.
+
+    Yields:
+        TestClient: Configured test client.
+    """
+
+    def override_get_db() -> Generator[Session, None, None]:
+        """Yield the test session instead of a real DB session."""
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
