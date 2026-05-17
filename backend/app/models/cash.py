@@ -1,10 +1,10 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class CashAccountType(str, Enum):
+class CashAccountType(StrEnum):
     """Cash account type."""
 
     SAVINGS = "Savings"

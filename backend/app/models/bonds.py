@@ -1,10 +1,10 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlmodel import Field, SQLModel
 
 
-class CapitalizationType(str, Enum):
+class CapitalizationType(StrEnum):
     """Bond interest capitalization type."""
 
     ANNUAL = "Annual"
