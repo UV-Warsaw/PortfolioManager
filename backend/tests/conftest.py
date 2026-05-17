@@ -1,17 +1,12 @@
 """Test configuration and shared fixtures."""
 
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
-
-from app.models.portfolio import Asset, Dividend, Transaction
-from app.models.bonds import Bond
-from app.models.cash import CashAccount
-from app.models.user_settings import UserSettings
 
 
 @pytest.fixture(name="db_session")
