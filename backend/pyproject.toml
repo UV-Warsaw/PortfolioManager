@@ -1,0 +1,54 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "portfolio-manager-backend"
+version = "0.1.0"
+description = "Portfolio Manager Backend API"
+authors = ["UV-Warsaw Team"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+sqlalchemy = "^2.0.23"
+sqlmodel = "^0.0.14"
+pydantic = "^2.5.0"
+pydantic-settings = "^2.1.0"
+python-multipart = "^0.0.6"
+pandas = "^2.1.4"
+openpyxl = "^3.1.2"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-dateutil = "^2.8.2"
+psycopg2-binary = "^2.9.9"
+alembic = "^1.13.0"
+yfinance = {version = "^0.2.18", optional = true}
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+httpx = "^0.25.2"
+pytest-cov = "^4.1.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.6"
+
+[tool.poetry.extras]
+prices = ["yfinance"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = ["E", "W", "F", "I", "B", "C4", "UP"]
+ignore = ["E501", "B008", "C901"]
+
+[tool.ruff.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
