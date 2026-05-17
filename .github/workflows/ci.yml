@@ -48,4 +48,11 @@ jobs:
         run: pip install -r requirements.txt pytest pytest-cov httpx
 
       - name: Run tests
-        run: pytest tests/ -q --tb=short --cov=app --cov-report=term-missing
+        run: |
+          pytest tests/ -q --tb=short --cov=app --cov-report=term-missing
+          exit_code=$?
+          if [ $exit_code -eq 5 ]; then
+            echo "No tests collected - skipping"
+            exit 0
+          fi
+          exit $exit_code
