@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Optional
 
 from pydantic_settings import BaseSettings
 
@@ -22,7 +21,7 @@ class Settings(BaseSettings):
     usd_to_pln_rate: float = 4.0
 
     log_level: str = "INFO"
-    log_file: Optional[str] = None
+    log_file: str | None = None
 
     class Config:
         env_file = ".env"

@@ -1,22 +1,24 @@
 import logging
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import Session, SQLModel
 
-from .config import settings
-from ..models.portfolio import Transaction, Dividend, Asset  # noqa: F401
 from ..models.bonds import Bond  # noqa: F401
 from ..models.cash import CashAccount  # noqa: F401
+from ..models.portfolio import Asset, Dividend, Transaction  # noqa: F401
 from ..models.user_settings import UserSettings  # noqa: F401
+from .config import settings
 
 logger = logging.getLogger(__name__)
 
 engine = create_engine(
     settings.database_url,
     echo=settings.database_echo,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    connect_args=(
+        {"check_same_thread": False} if "sqlite" in settings.database_url else {}
+    ),
 )
 
 SessionLocal = sessionmaker(

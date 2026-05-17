@@ -1,11 +1,10 @@
 from datetime import datetime
-from typing import Optional
-from enum import Enum
+from enum import StrEnum
 
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
 
-class CashAccountType(str, Enum):
+class CashAccountType(StrEnum):
     """Cash account type."""
 
     SAVINGS = "Savings"
@@ -21,12 +20,12 @@ class CashAccount(SQLModel, table=True):
 
     __tablename__ = "cash_accounts"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     name: str = Field()
     account_type: CashAccountType = Field()
     balance: float = Field()
-    interest_rate: Optional[float] = Field(default=None)
-    bank_name: Optional[str] = Field(default=None)
+    interest_rate: float | None = Field(default=None)
+    bank_name: str | None = Field(default=None)
     currency: str = Field(default="PLN")
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = Field(default=None)
+    updated_at: datetime | None = Field(default=None)
