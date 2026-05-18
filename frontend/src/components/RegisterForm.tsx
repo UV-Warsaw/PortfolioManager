@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import { ApiError, registerUser } from '../services/authApi'
 
 interface Props {
-  onSuccess: (email: string) => void
+  onSuccess: (email: string, token: string) => void
+  onSwitchToLogin: () => void
 }
 
-const RegisterForm: React.FC<Props> = ({ onSuccess }) => {
+const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -18,7 +19,7 @@ const RegisterForm: React.FC<Props> = ({ onSuccess }) => {
     try {
       const result = await registerUser({ email, password })
       localStorage.setItem('access_token', result.access_token)
-      onSuccess(result.email)
+      onSuccess(result.email, result.access_token)
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('An account with this email already exists.')
@@ -104,6 +105,19 @@ const RegisterForm: React.FC<Props> = ({ onSuccess }) => {
       >
         {loading ? 'Creating account...' : 'Create account'}
       </button>
+
+      <p className="mt-4 text-center text-xs" style={{ color: 'var(--muted)' }}>
+        Already have an account?{' '}
+        <button
+          type="button"
+          onClick={onSwitchToLogin}
+          className="font-semibold underline underline-offset-2 focus-visible:outline-none
+            focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          style={{ color: 'var(--accent)' }}
+        >
+          Sign in
+        </button>
+      </p>
     </form>
   )
 }
