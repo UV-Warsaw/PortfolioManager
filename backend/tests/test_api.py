@@ -61,3 +61,131 @@ def test_health_endpoints(client: TestClient, path: str) -> None:
     """
     response = client.get(path)
     assert response.status_code == 200
+
+
+def test_login_success(client: TestClient) -> None:
+    """
+    POST /auth/login with valid credentials returns a token.
+    """
+    client.post(
+        "/auth/register",
+        json={"email": "login@example.com", "password": "strongpass1"},
+    )
+
+    response = client.post(
+        "/auth/login",
+        json={"email": "login@example.com", "password": "strongpass1"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == "login@example.com"
+    assert "access_token" in body
+    assert body["token_type"] == "bearer"
+
+
+def test_login_invalid_password_returns_401(client: TestClient) -> None:
+    """
+    POST /auth/login with wrong password returns 401.
+    """
+    client.post(
+        "/auth/register",
+        json={"email": "wrongpass@example.com", "password": "strongpass1"},
+    )
+
+    response = client.post(
+        "/auth/login",
+        json={"email": "wrongpass@example.com", "password": "wrongpassword"},
+    )
+    assert response.status_code == 401
+    assert "Invalid email or password" in response.json()["detail"]
+
+
+def test_login_nonexistent_user_returns_401(client: TestClient) -> None:
+    """
+    POST /auth/login with non-existent email returns 401.
+    """
+    response = client.post(
+        "/auth/login",
+        json={"email": "nouser@example.com", "password": "strongpass1"},
+    )
+    assert response.status_code == 401
+
+
+def test_logout_success(client: TestClient) -> None:
+    """
+    POST /auth/logout with valid token invalidates the token.
+    """
+    reg_response = client.post(
+        "/auth/register",
+        json={"email": "logout@example.com", "password": "strongpass1"},
+    )
+    token = reg_response.json()["access_token"]
+
+    response = client.post(
+        "/auth/logout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["message"] == "Successfully logged out"
+
+
+def test_logout_invalidates_token(client: TestClient) -> None:
+    """
+    After logout, the token should be rejected on /auth/me.
+    """
+    reg_response = client.post(
+        "/auth/register",
+        json={"email": "invalidate@example.com", "password": "strongpass1"},
+    )
+    token = reg_response.json()["access_token"]
+
+    client.post(
+        "/auth/logout",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    me_response = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_response.status_code == 401
+    assert "revoked" in me_response.json()["detail"]
+
+
+def test_get_me_success(client: TestClient) -> None:
+    """
+    GET /auth/me with valid token returns user info.
+    """
+    reg_response = client.post(
+        "/auth/register",
+        json={"email": "me@example.com", "password": "strongpass1"},
+    )
+    token = reg_response.json()["access_token"]
+
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == "me@example.com"
+    assert "id" in body
+
+
+def test_get_me_without_token_returns_403(client: TestClient) -> None:
+    """
+    GET /auth/me without Authorization header returns 403.
+    """
+    response = client.get("/auth/me")
+    assert response.status_code == 403
+
+
+def test_get_me_with_invalid_token_returns_401(client: TestClient) -> None:
+    """
+    GET /auth/me with invalid token returns 401.
+    """
+    response = client.get(
+        "/auth/me",
+        headers={"Authorization": "Bearer invalid-token"},
+    )
+    assert response.status_code == 401
