@@ -17,3 +17,25 @@ class RegisterResponse(BaseModel):
     email: str
     access_token: str
     token_type: str = "bearer"
+
+
+class LoginRequest(BaseModel):
+    """Schema for user login request."""
+
+    email: EmailStr
+    password: str
+
+
+class LoginResponse(BaseModel):
+    """Schema for login response with access token."""
+
+    id: int
+    email: str
+    access_token: str
+    token_type: str = "bearer"
+
+
+class LogoutResponse(BaseModel):
+    """Schema for logout response."""
+
+    message: str = "Successfully logged out"
