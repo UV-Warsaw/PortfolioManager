@@ -14,6 +14,23 @@ export interface RegisterResponse {
   token_type: string
 }
 
+export interface LoginRequest {
+  email: string
+  password: string
+}
+
+export interface LoginResponse {
+  id: number
+  email: string
+  access_token: string
+  token_type: string
+}
+
+export interface MeResponse {
+  id: number
+  email: string
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -37,4 +54,38 @@ export async function registerUser(data: RegisterRequest): Promise<RegisterRespo
   }
 
   return res.json() as Promise<RegisterResponse>
+}
+
+export async function loginUser(data: LoginRequest): Promise<LoginResponse> {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: 'Unknown error' }))
+    throw new ApiError(res.status, body.detail ?? 'Login failed')
+  }
+
+  return res.json() as Promise<LoginResponse>
+}
+
+export async function logoutUser(token: string): Promise<void> {
+  await fetch(`${API_URL}/auth/logout`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+}
+
+export async function getMe(token: string): Promise<MeResponse> {
+  const res = await fetch(`${API_URL}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!res.ok) {
+    throw new ApiError(res.status, 'Not authenticated')
+  }
+
+  return res.json() as Promise<MeResponse>
 }
