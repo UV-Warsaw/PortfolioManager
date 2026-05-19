@@ -7,7 +7,9 @@ from sqlmodel import Session, SQLModel
 
 from ..models.bonds import Bond  # noqa: F401
 from ..models.cash import CashAccount  # noqa: F401
+from ..models.password_reset import PasswordResetToken  # noqa: F401
 from ..models.portfolio import Asset, Dividend, Transaction  # noqa: F401
+from ..models.token_blacklist import TokenBlacklist  # noqa: F401
 from ..models.user_settings import UserSettings  # noqa: F401
 from .config import settings
 
