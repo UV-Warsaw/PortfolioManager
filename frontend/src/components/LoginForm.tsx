@@ -4,9 +4,10 @@ import { ApiError, loginUser } from '../services/authApi'
 interface Props {
   onSuccess: (email: string, token: string) => void
   onSwitchToRegister: () => void
+  onForgotPassword: () => void
 }
 
-const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister }) => {
+const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister, onForgotPassword }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -119,6 +120,18 @@ const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister }) => {
           style={{ color: 'var(--accent)' }}
         >
           Create one
+        </button>
+      </p>
+
+      <p className="mt-2 text-center text-xs" style={{ color: 'var(--muted)' }}>
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="underline underline-offset-2 focus-visible:outline-none
+            focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
+          style={{ color: 'var(--muted)' }}
+        >
+          Forgot password?
         </button>
       </p>
     </form>
