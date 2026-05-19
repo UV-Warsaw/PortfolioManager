@@ -1,8 +1,9 @@
 """Integration tests for the auth router."""
 
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch
 
 
 def test_register_success(client: TestClient) -> None:
@@ -246,7 +247,9 @@ def test_password_reset_confirm_success(client: TestClient) -> None:
     def fake_send(email: str, reset_url: str) -> None:
         captured.append(reset_url)
 
-    with patch("app.services.password_reset.send_password_reset_email", side_effect=fake_send):
+    with patch(
+        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+    ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "confirm@example.com"},
@@ -283,7 +286,9 @@ def test_password_reset_confirm_token_cannot_be_reused(client: TestClient) -> No
     def fake_send(email: str, reset_url: str) -> None:
         captured.append(reset_url)
 
-    with patch("app.services.password_reset.send_password_reset_email", side_effect=fake_send):
+    with patch(
+        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+    ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "reuse@example.com"},
@@ -328,4 +333,3 @@ def test_password_reset_confirm_short_password_returns_422(
         json={"token": "any-token", "new_password": "short"},
     )
     assert response.status_code == 422
-

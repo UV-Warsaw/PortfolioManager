@@ -148,7 +148,6 @@ def test_request_password_reset_issues_token_for_registered_email(
     """
     from unittest.mock import patch
 
-    from app.repositories.password_reset import PasswordResetTokenRepository
     from app.services.password_reset import request_password_reset
 
     register_user(email="pr@example.com", password="securepass", session=db_session)
@@ -156,9 +155,8 @@ def test_request_password_reset_issues_token_for_registered_email(
     with patch("app.services.password_reset.send_password_reset_email"):
         request_password_reset(email="pr@example.com", session=db_session)
 
-    repo = PasswordResetTokenRepository(db_session)
-    # A record must exist — we verify via get_valid using the repo's internal query
     from sqlmodel import select
+
     from app.models.password_reset import PasswordResetToken
 
     records = db_session.exec(
@@ -189,15 +187,12 @@ def test_confirm_password_reset_updates_password(db_session: Session) -> None:
     """
     import secrets
     from datetime import UTC, datetime, timedelta
-    from unittest.mock import patch
 
     from app.repositories.password_reset import PasswordResetTokenRepository
     from app.services.auth import login_user
     from app.services.password_reset import confirm_password_reset
 
-    register_user(
-        email="cpw@example.com", password="oldpassword", session=db_session
-    )
+    register_user(email="cpw@example.com", password="oldpassword", session=db_session)
 
     raw_token = secrets.token_urlsafe(32)
     expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
@@ -238,9 +233,7 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
     from app.repositories.password_reset import PasswordResetTokenRepository
     from app.services.password_reset import confirm_password_reset
 
-    register_user(
-        email="reuse@example.com", password="oldpassword", session=db_session
-    )
+    register_user(email="reuse@example.com", password="oldpassword", session=db_session)
 
     raw_token = secrets.token_urlsafe(32)
     expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
