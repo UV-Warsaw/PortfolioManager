@@ -15,7 +15,17 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     access_token_expire_hours: int = 24
 
+    password_reset_expire_hours: int = 1
+
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+
+    frontend_url: str = "http://localhost:5173"
+
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "noreply@portfoliomanager.local"
 
     data_dir: Path = Path(__file__).parent.parent.parent / "data"
 
