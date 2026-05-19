@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     secret_key: str = "change-me-in-production"
+    access_token_expire_hours: int = 24
 
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 

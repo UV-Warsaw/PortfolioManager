@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from 'react'
+import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
+import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
-type Screen = 'register' | 'registered'
+type Screen = 'login' | 'register' | 'dashboard'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 const App: React.FC = () => {
   const [apiStatus, setApiStatus] = useState<ApiStatus>('checking')
-  const [screen, setScreen] = useState<Screen>('register')
-  const [registeredEmail, setRegisteredEmail] = useState('')
+  const [screen, setScreen] = useState<Screen>('login')
+  const [currentEmail, setCurrentEmail] = useState('')
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
     const check = async () => {
@@ -23,6 +26,39 @@ const App: React.FC = () => {
     void check()
   }, [])
 
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (token === null) return
+
+    const restore = async () => {
+      try {
+        const me = await getMe(token)
+        setCurrentEmail(me.email)
+        setScreen('dashboard')
+      } catch {
+        localStorage.removeItem('access_token')
+      }
+    }
+    void restore()
+  }, [])
+
+  const handleAuthSuccess = (email: string) => {
+    setCurrentEmail(email)
+    setScreen('dashboard')
+  }
+
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    const token = localStorage.getItem('access_token')
+    if (token !== null) {
+      await logoutUser(token).catch(() => {})
+    }
+    localStorage.removeItem('access_token')
+    setCurrentEmail('')
+    setScreen('login')
+    setLoggingOut(false)
+  }
+
   const statusColor: Record<ApiStatus, string> = {
     checking: 'text-yellow-400',
     online: 'text-emerald-400',
@@ -33,6 +69,12 @@ const App: React.FC = () => {
     checking: 'Checking...',
     online: 'Online',
     offline: 'Offline',
+  }
+
+  const screenTitle: Record<Screen, string> = {
+    login: 'Sign in',
+    register: 'Create your account',
+    dashboard: 'Dashboard',
   }
 
   return (
@@ -75,33 +117,77 @@ const App: React.FC = () => {
             Portfolio Manager
           </h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-            {screen === 'register' ? 'Create your account' : 'Account created'}
+            {screenTitle[screen]}
           </p>
         </div>
 
-        {screen === 'register' ? (
-          <RegisterForm
-            onSuccess={(email) => {
-              setRegisteredEmail(email)
-              setScreen('registered')
-            }}
+        {screen === 'login' && (
+          <LoginForm
+            onSuccess={(email) => handleAuthSuccess(email)}
+            onSwitchToRegister={() => setScreen('register')}
           />
-        ) : (
-          <div className="text-center">
+        )}
+
+        {screen === 'register' && (
+          <RegisterForm
+            onSuccess={(email) => handleAuthSuccess(email)}
+            onSwitchToLogin={() => setScreen('login')}
+          />
+        )}
+
+        {screen === 'dashboard' && (
+          <div>
             <div
-              className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4"
-              style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)' }}
+              className="rounded-xl p-4 mb-6 flex items-center gap-3"
+              style={{
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.2)',
+              }}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+              <div
+                className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold"
+                style={{ background: 'var(--accent)', color: '#fff' }}
+              >
+                {currentEmail.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>Signed in as</p>
+                <p
+                  className="text-sm font-medium truncate"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {currentEmail}
+                </p>
+              </div>
             </div>
-            <p className="font-semibold" style={{ color: 'var(--text)' }}>
-              Welcome aboard
-            </p>
-            <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-              {registeredEmail}
-            </p>
+
+            <div
+              className="rounded-xl p-6 mb-6 text-center"
+              style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+            >
+              <p className="text-sm" style={{ color: 'var(--muted)' }}>
+                Portfolio dashboard coming soon.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { void handleLogout() }}
+              disabled={loggingOut}
+              className="w-full rounded-lg py-2 text-sm font-semibold transition-opacity
+                disabled:opacity-50 focus-visible:outline focus-visible:outline-2
+                focus-visible:outline-red-500"
+              style={{
+                background: 'rgba(239,68,68,0.12)',
+                color: '#f87171',
+                border: '1px solid rgba(239,68,68,0.25)',
+              }}
+            >
+              {loggingOut ? 'Signing out...' : 'Sign out'}
+            </button>
           </div>
         )}
 

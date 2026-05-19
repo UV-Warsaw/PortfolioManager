@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { ApiError, registerUser } from '../services/authApi'
+import { ApiError, loginUser } from '../services/authApi'
 
 interface Props {
   onSuccess: (email: string, token: string) => void
-  onSwitchToLogin: () => void
+  onSwitchToRegister: () => void
 }
 
-const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
+const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister }) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -17,14 +17,14 @@ const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
     setError(null)
     setLoading(true)
     try {
-      const result = await registerUser({ email, password })
+      const result = await loginUser({ email, password })
       localStorage.setItem('access_token', result.access_token)
       onSuccess(result.email, result.access_token)
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setError('An account with this email already exists.')
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Invalid email or password.')
       } else {
-        setError('Registration failed. Please try again.')
+        setError('Login failed. Please try again.')
       }
     } finally {
       setLoading(false)
@@ -70,9 +70,8 @@ const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
         <input
           id="password"
           type="password"
-          autoComplete="new-password"
+          autoComplete="current-password"
           required
-          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className="w-full rounded-lg px-3 py-2 text-sm outline-none
@@ -82,7 +81,7 @@ const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
             border: '1px solid rgba(255,255,255,0.1)',
             color: 'var(--text)',
           }}
-          placeholder="Minimum 8 characters"
+          placeholder="Your password"
         />
       </div>
 
@@ -90,7 +89,11 @@ const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
         <div
           role="alert"
           className="mb-4 rounded-lg px-3 py-2 text-sm"
-          style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+          style={{
+            background: 'rgba(239,68,68,0.12)',
+            color: '#f87171',
+            border: '1px solid rgba(239,68,68,0.3)',
+          }}
         >
           {error}
         </div>
@@ -103,23 +106,23 @@ const RegisterForm: React.FC<Props> = ({ onSuccess, onSwitchToLogin }) => {
           disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
         style={{ background: 'var(--accent)', color: '#fff' }}
       >
-        {loading ? 'Creating account...' : 'Create account'}
+        {loading ? 'Signing in...' : 'Sign in'}
       </button>
 
       <p className="mt-4 text-center text-xs" style={{ color: 'var(--muted)' }}>
-        Already have an account?{' '}
+        No account?{' '}
         <button
           type="button"
-          onClick={onSwitchToLogin}
+          onClick={onSwitchToRegister}
           className="font-semibold underline underline-offset-2 focus-visible:outline-none
             focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
           style={{ color: 'var(--accent)' }}
         >
-          Sign in
+          Create one
         </button>
       </p>
     </form>
   )
 }
 
-export default RegisterForm
+export default LoginForm
