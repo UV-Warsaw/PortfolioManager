@@ -133,3 +133,125 @@ def test_logout_user_invalid_token_raises(db_session: Session) -> None:
     """
     with pytest.raises(ValueError, match="Invalid token"):
         logout_user(token="invalid-token", session=db_session)
+
+
+# ---------------------------------------------------------------------------
+# Password-reset service unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_request_password_reset_issues_token_for_registered_email(
+    db_session: Session,
+) -> None:
+    """
+    request_password_reset creates a PasswordResetToken row for a valid email.
+    """
+    from unittest.mock import patch
+
+    from app.repositories.password_reset import PasswordResetTokenRepository
+    from app.services.password_reset import request_password_reset
+
+    register_user(email="pr@example.com", password="securepass", session=db_session)
+
+    with patch("app.services.password_reset.send_password_reset_email"):
+        request_password_reset(email="pr@example.com", session=db_session)
+
+    repo = PasswordResetTokenRepository(db_session)
+    # A record must exist — we verify via get_valid using the repo's internal query
+    from sqlmodel import select
+    from app.models.password_reset import PasswordResetToken
+
+    records = db_session.exec(
+        select(PasswordResetToken).where(PasswordResetToken.email == "pr@example.com")
+    ).all()
+    assert len(records) == 1
+    assert records[0].used_at is None
+
+
+def test_request_password_reset_silent_for_unknown_email(
+    db_session: Session,
+) -> None:
+    """
+    request_password_reset returns silently for an unregistered address.
+    """
+    from unittest.mock import patch
+
+    from app.services.password_reset import request_password_reset
+
+    with patch("app.services.password_reset.send_password_reset_email") as mock_send:
+        request_password_reset(email="ghost@example.com", session=db_session)
+        mock_send.assert_not_called()
+
+
+def test_confirm_password_reset_updates_password(db_session: Session) -> None:
+    """
+    confirm_password_reset changes the user's password and marks token used.
+    """
+    import secrets
+    from datetime import UTC, datetime, timedelta
+    from unittest.mock import patch
+
+    from app.repositories.password_reset import PasswordResetTokenRepository
+    from app.services.auth import login_user
+    from app.services.password_reset import confirm_password_reset
+
+    register_user(
+        email="cpw@example.com", password="oldpassword", session=db_session
+    )
+
+    raw_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
+    repo = PasswordResetTokenRepository(db_session)
+    repo.create(raw_token=raw_token, email="cpw@example.com", expires_at=expires_at)
+
+    confirm_password_reset(
+        raw_token=raw_token, new_password="newpassword1", session=db_session
+    )
+
+    result = login_user(
+        email="cpw@example.com", password="newpassword1", session=db_session
+    )
+    assert result["email"] == "cpw@example.com"
+
+
+def test_confirm_password_reset_invalid_token_raises(db_session: Session) -> None:
+    """
+    confirm_password_reset with a bad token raises ValueError.
+    """
+    from app.services.password_reset import confirm_password_reset
+
+    with pytest.raises(ValueError, match="Invalid or expired"):
+        confirm_password_reset(
+            raw_token="bogus-token",
+            new_password="newpassword1",
+            session=db_session,
+        )
+
+
+def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> None:
+    """
+    confirm_password_reset marks the token as used; a second attempt raises ValueError.
+    """
+    import secrets
+    from datetime import UTC, datetime, timedelta
+
+    from app.repositories.password_reset import PasswordResetTokenRepository
+    from app.services.password_reset import confirm_password_reset
+
+    register_user(
+        email="reuse@example.com", password="oldpassword", session=db_session
+    )
+
+    raw_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
+    repo = PasswordResetTokenRepository(db_session)
+    repo.create(raw_token=raw_token, email="reuse@example.com", expires_at=expires_at)
+
+    confirm_password_reset(
+        raw_token=raw_token, new_password="firstnewpass", session=db_session
+    )
+
+    with pytest.raises(ValueError, match="Invalid or expired"):
+        confirm_password_reset(
+            raw_token=raw_token, new_password="secondnewpass", session=db_session
+        )

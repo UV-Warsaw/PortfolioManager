@@ -2,6 +2,7 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 
 
 def test_register_success(client: TestClient) -> None:
@@ -189,3 +190,142 @@ def test_get_me_with_invalid_token_returns_401(client: TestClient) -> None:
         headers={"Authorization": "Bearer invalid-token"},
     )
     assert response.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Password reset integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_password_reset_request_registered_email_returns_202(
+    client: TestClient,
+) -> None:
+    """
+    POST /auth/password-reset/request with a registered email returns 202.
+    """
+    client.post(
+        "/auth/register",
+        json={"email": "reset@example.com", "password": "strongpass1"},
+    )
+
+    with patch("app.services.password_reset.send_password_reset_email"):
+        response = client.post(
+            "/auth/password-reset/request",
+            json={"email": "reset@example.com"},
+        )
+
+    assert response.status_code == 202
+    assert "reset link" in response.json()["message"]
+
+
+def test_password_reset_request_unknown_email_also_returns_202(
+    client: TestClient,
+) -> None:
+    """
+    POST /auth/password-reset/request with an unknown email still returns 202
+    to prevent account enumeration.
+    """
+    response = client.post(
+        "/auth/password-reset/request",
+        json={"email": "ghost@example.com"},
+    )
+    assert response.status_code == 202
+
+
+def test_password_reset_confirm_success(client: TestClient) -> None:
+    """
+    POST /auth/password-reset/confirm with a valid token updates the password.
+    """
+    client.post(
+        "/auth/register",
+        json={"email": "confirm@example.com", "password": "oldpassword"},
+    )
+
+    captured: list[str] = []
+
+    def fake_send(email: str, reset_url: str) -> None:
+        captured.append(reset_url)
+
+    with patch("app.services.password_reset.send_password_reset_email", side_effect=fake_send):
+        client.post(
+            "/auth/password-reset/request",
+            json={"email": "confirm@example.com"},
+        )
+
+    assert captured, "No reset URL was captured"
+    raw_token = captured[0].split("token=")[-1]
+
+    response = client.post(
+        "/auth/password-reset/confirm",
+        json={"token": raw_token, "new_password": "newpassword1"},
+    )
+    assert response.status_code == 200
+    assert "Password updated" in response.json()["message"]
+
+    login_response = client.post(
+        "/auth/login",
+        json={"email": "confirm@example.com", "password": "newpassword1"},
+    )
+    assert login_response.status_code == 200
+
+
+def test_password_reset_confirm_token_cannot_be_reused(client: TestClient) -> None:
+    """
+    POST /auth/password-reset/confirm with an already-used token returns 400.
+    """
+    client.post(
+        "/auth/register",
+        json={"email": "reuse@example.com", "password": "oldpassword"},
+    )
+
+    captured: list[str] = []
+
+    def fake_send(email: str, reset_url: str) -> None:
+        captured.append(reset_url)
+
+    with patch("app.services.password_reset.send_password_reset_email", side_effect=fake_send):
+        client.post(
+            "/auth/password-reset/request",
+            json={"email": "reuse@example.com"},
+        )
+
+    raw_token = captured[0].split("token=")[-1]
+
+    client.post(
+        "/auth/password-reset/confirm",
+        json={"token": raw_token, "new_password": "firstnewpass"},
+    )
+
+    response = client.post(
+        "/auth/password-reset/confirm",
+        json={"token": raw_token, "new_password": "secondnewpass"},
+    )
+    assert response.status_code == 400
+    assert "Invalid or expired" in response.json()["detail"]
+
+
+def test_password_reset_confirm_invalid_token_returns_400(
+    client: TestClient,
+) -> None:
+    """
+    POST /auth/password-reset/confirm with a bogus token returns 400.
+    """
+    response = client.post(
+        "/auth/password-reset/confirm",
+        json={"token": "not-a-real-token", "new_password": "newpassword1"},
+    )
+    assert response.status_code == 400
+
+
+def test_password_reset_confirm_short_password_returns_422(
+    client: TestClient,
+) -> None:
+    """
+    POST /auth/password-reset/confirm with a short new password returns 422.
+    """
+    response = client.post(
+        "/auth/password-reset/confirm",
+        json={"token": "any-token", "new_password": "short"},
+    )
+    assert response.status_code == 422
+
