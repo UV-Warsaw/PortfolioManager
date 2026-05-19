@@ -17,7 +17,7 @@ from ..repositories.user import UserRepository
 _ALGORITHM = "HS256"
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-_bearer_scheme = HTTPBearer()
+_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def _hash_password(password: str) -> str:
@@ -176,7 +176,7 @@ def logout_user(token: str, session: Session) -> None:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(_bearer_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
     session: Session = Depends(get_db),
 ) -> dict:
     """
@@ -185,15 +185,22 @@ def get_current_user(
     Validates the token, checks it's not blacklisted, and returns user info.
 
     Args:
-        credentials: Bearer token from Authorization header.
+        credentials: Bearer token from Authorization header, or None if absent.
         session: Active database session.
 
     Returns:
         dict with user id and email.
 
     Raises:
+        HTTPException 403: If Authorization header is missing entirely.
         HTTPException 401: If token is invalid, expired, or blacklisted.
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated",
+        )
+
     token = credentials.credentials
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
