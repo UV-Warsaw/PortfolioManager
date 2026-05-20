@@ -209,14 +209,14 @@ def test_password_reset_request_registered_email_returns_202(
         json={"email": "reset@example.com", "password": "strongpass1"},
     )
 
-    with patch("app.services.password_reset.send_password_reset_email"):
+    with patch("app.services.password_reset.send_password_reset_code"):
         response = client.post(
             "/auth/password-reset/request",
             json={"email": "reset@example.com"},
         )
 
     assert response.status_code == 202
-    assert "reset link" in response.json()["message"]
+    assert "verification code" in response.json()["message"]
 
 
 def test_password_reset_request_unknown_email_also_returns_202(
@@ -244,23 +244,23 @@ def test_password_reset_confirm_success(client: TestClient) -> None:
 
     captured: list[str] = []
 
-    def fake_send(email: str, reset_url: str) -> None:
-        captured.append(reset_url)
+    def fake_send(email: str, code: str) -> None:
+        captured.append(code)
 
     with patch(
-        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+        "app.services.password_reset.send_password_reset_code", side_effect=fake_send
     ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "confirm@example.com"},
         )
 
-    assert captured, "No reset URL was captured"
-    raw_token = captured[0].split("token=")[-1]
+    assert captured, "No code was captured"
+    raw_code = captured[0]
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "newpassword1"},
+        json={"email": "confirm@example.com", "code": raw_code, "new_password": "newpassword1"},
     )
     assert response.status_code == 200
     assert "Password updated" in response.json()["message"]
@@ -283,27 +283,27 @@ def test_password_reset_confirm_token_cannot_be_reused(client: TestClient) -> No
 
     captured: list[str] = []
 
-    def fake_send(email: str, reset_url: str) -> None:
-        captured.append(reset_url)
+    def fake_send(email: str, code: str) -> None:
+        captured.append(code)
 
     with patch(
-        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+        "app.services.password_reset.send_password_reset_code", side_effect=fake_send
     ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "reuse@example.com"},
         )
 
-    raw_token = captured[0].split("token=")[-1]
+    raw_code = captured[0]
 
     client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "firstnewpass"},
+        json={"email": "reuse@example.com", "code": raw_code, "new_password": "firstnewpass"},
     )
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "secondnewpass"},
+        json={"email": "reuse@example.com", "code": raw_code, "new_password": "secondnewpass"},
     )
     assert response.status_code == 400
     assert "Invalid or expired" in response.json()["detail"]
@@ -317,7 +317,7 @@ def test_password_reset_confirm_invalid_token_returns_400(
     """
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": "not-a-real-token", "new_password": "newpassword1"},
+        json={"email": "ghost@example.com", "code": "000000", "new_password": "newpassword1"},
     )
     assert response.status_code == 400
 
@@ -330,6 +330,6 @@ def test_password_reset_confirm_short_password_returns_422(
     """
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": "any-token", "new_password": "short"},
+        json={"email": "x@example.com", "code": "123456", "new_password": "short"},
     )
     assert response.status_code == 422
