@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import LoginForm from './components/LoginForm'
 import RegisterForm from './components/RegisterForm'
-import ResetPasswordForm from './components/ResetPasswordForm'
 import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
-type Screen = 'login' | 'register' | 'dashboard' | 'forgot-password' | 'reset-password'
+type Screen = 'login' | 'register' | 'dashboard' | 'forgot-password'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -15,16 +14,6 @@ const App: React.FC = () => {
   const [screen, setScreen] = useState<Screen>('login')
   const [currentEmail, setCurrentEmail] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
-  const [resetToken, setResetToken] = useState<string | null>(null)
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const token = params.get('token')
-    if (token !== null) {
-      setResetToken(token)
-      setScreen('reset-password')
-    }
-  }, [])
 
   useEffect(() => {
     const check = async () => {
@@ -88,7 +77,6 @@ const App: React.FC = () => {
     register: 'Create your account',
     dashboard: 'Dashboard',
     'forgot-password': 'Reset your password',
-    'reset-password': 'Set new password',
   }
 
   return (
@@ -146,17 +134,6 @@ const App: React.FC = () => {
         {screen === 'forgot-password' && (
           <ForgotPasswordForm
             onSwitchToLogin={() => setScreen('login')}
-          />
-        )}
-
-        {screen === 'reset-password' && resetToken !== null && (
-          <ResetPasswordForm
-            token={resetToken}
-            onSuccess={() => {
-              setResetToken(null)
-              window.history.replaceState({}, '', '/')
-              setScreen('login')
-            }}
           />
         )}
 
