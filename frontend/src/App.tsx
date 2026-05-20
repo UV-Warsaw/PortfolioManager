@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import LoginForm from './components/LoginForm'
+import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
 import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
-type Screen = 'login' | 'register' | 'dashboard' | 'forgot-password'
+type Screen = 'login' | 'register' | 'dashboard' | 'forgot-password' | 'profile'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -77,6 +78,7 @@ const App: React.FC = () => {
     register: 'Create your account',
     dashboard: 'Dashboard',
     'forgot-password': 'Reset your password',
+    profile: 'Edit profile',
   }
 
   return (
@@ -182,22 +184,45 @@ const App: React.FC = () => {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => { void handleLogout() }}
-              disabled={loggingOut}
-              className="w-full rounded-lg py-2 text-sm font-semibold transition-opacity
-                disabled:opacity-50 focus-visible:outline focus-visible:outline-2
-                focus-visible:outline-red-500"
-              style={{
-                background: 'rgba(239,68,68,0.12)',
-                color: '#f87171',
-                border: '1px solid rgba(239,68,68,0.25)',
-              }}
-            >
-              {loggingOut ? 'Signing out...' : 'Sign out'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setScreen('profile')}
+                className="flex-1 rounded-lg py-2 text-sm font-semibold transition-opacity
+                  focus-visible:outline focus-visible:outline-2
+                  focus-visible:outline-indigo-500"
+                style={{
+                  background: 'rgba(99,102,241,0.12)',
+                  color: '#a5b4fc',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                }}
+              >
+                Edit profile
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleLogout() }}
+                disabled={loggingOut}
+                className="flex-1 rounded-lg py-2 text-sm font-semibold transition-opacity
+                  disabled:opacity-50 focus-visible:outline focus-visible:outline-2
+                  focus-visible:outline-red-500"
+                style={{
+                  background: 'rgba(239,68,68,0.12)',
+                  color: '#f87171',
+                  border: '1px solid rgba(239,68,68,0.25)',
+                }}
+              >
+                {loggingOut ? 'Signing out...' : 'Sign out'}
+              </button>
+            </div>
           </div>
+        )}
+
+        {screen === 'profile' && (
+          <ProfileForm
+            onBack={() => setScreen('dashboard')}
+            onEmailChanged={(email) => setCurrentEmail(email)}
+          />
         )}
 
         <div
