@@ -56,21 +56,23 @@ class PasswordResetTokenRepository:
         self._session.refresh(record)
         return record
 
-    def get_valid(self, raw_token: str) -> PasswordResetToken | None:
+    def get_valid(self, raw_code: str, email: str) -> PasswordResetToken | None:
         """
-        Return an unused, non-expired token record matching the raw token.
+        Return an unused, non-expired token record matching the code and email.
 
         Args:
-            raw_token: Plain-text token to look up.
+            raw_code: Plain-text 6-digit code entered by the user.
+            email: Email address the reset was requested for.
 
         Returns:
             Matching PasswordResetToken, or None if not found / invalid.
         """
-        token_hash = _hash_token(raw_token)
+        token_hash = _hash_token(raw_code)
         now_iso = datetime.now(UTC).isoformat()
 
         statement = select(PasswordResetToken).where(
             PasswordResetToken.token_hash == token_hash,
+            PasswordResetToken.email == email,
             PasswordResetToken.used_at.is_(None),  # type: ignore[union-attr]
             PasswordResetToken.expires_at > now_iso,
         )
