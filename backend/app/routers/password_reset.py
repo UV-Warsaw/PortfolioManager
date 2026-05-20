@@ -38,7 +38,7 @@ def password_reset_request(
     """
     request_password_reset(email=str(payload.email), session=session)
     return PasswordResetResponseSchema(
-        message="If that address is registered you will receive a reset link shortly."
+        message="If that address is registered you will receive a verification code shortly."
     )
 
 
@@ -51,21 +51,22 @@ def password_reset_confirm(
     session: Session = Depends(get_db),
 ) -> PasswordResetResponseSchema:
     """
-    Complete the password-reset flow using the one-time token.
+    Complete the password-reset flow using the 6-digit verification code.
 
     Args:
-        payload: Request body with token and new password.
+        payload: Request body with email, code, and new password.
         session: Database session injected via dependency.
 
     Returns:
         PasswordResetResponseSchema: Confirmation message.
 
     Raises:
-        HTTPException 400: If the token is invalid, expired, or already used.
+        HTTPException 400: If the code is invalid, expired, or already used.
     """
     try:
         confirm_password_reset(
-            raw_token=payload.token,
+            email=str(payload.email),
+            raw_code=payload.code,
             new_password=payload.new_password,
             session=session,
         )
