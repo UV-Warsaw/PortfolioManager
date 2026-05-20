@@ -248,3 +248,209 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
         confirm_password_reset(
             email="reuse@example.com", raw_code=raw_token, new_password="secondnewpass", session=db_session
         )
+
+
+# ---------------------------------------------------------------------------
+# Profile service unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_profile_returns_profile(db_session: Session) -> None:
+    """
+    get_profile returns ProfileResponse with correct email and defaults.
+    """
+    from app.services.profile import get_profile
+
+    result = register_user(
+        email="profile@example.com", password="securepass1", session=db_session
+    )
+    profile = get_profile(user_id=result["id"], session=db_session)
+
+    assert profile.email == "profile@example.com"
+    assert profile.risk_level == "moderate"
+    assert profile.monthly_expenses == 0.0
+    assert isinstance(profile.id, int)
+
+
+def test_get_profile_raises_for_missing_user(db_session: Session) -> None:
+    """
+    get_profile raises ValueError when the user does not exist.
+    """
+    from app.services.profile import get_profile
+
+    with pytest.raises(ValueError, match="User not found"):
+        get_profile(user_id=999, session=db_session)
+
+
+def test_update_email_success(db_session: Session) -> None:
+    """
+    update_email changes the email when current password is correct.
+    """
+    from app.services.profile import update_email
+
+    result = register_user(
+        email="oldemail@example.com", password="securepass1", session=db_session
+    )
+    profile = update_email(
+        user_id=result["id"],
+        current_password="securepass1",
+        new_email="newemail@example.com",
+        session=db_session,
+    )
+
+    assert profile.email == "newemail@example.com"
+
+
+def test_update_email_wrong_password_raises(db_session: Session) -> None:
+    """
+    update_email raises ValueError when current_password is wrong.
+    """
+    from app.services.profile import update_email
+
+    result = register_user(
+        email="emailwrong@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="Current password is incorrect"):
+        update_email(
+            user_id=result["id"],
+            current_password="wrongpassword",
+            new_email="other@example.com",
+            session=db_session,
+        )
+
+
+def test_update_email_duplicate_raises(db_session: Session) -> None:
+    """
+    update_email raises ValueError when the new email is already taken.
+    """
+    from app.services.profile import update_email
+
+    register_user(email="taken@example.com", password="securepass1", session=db_session)
+    result = register_user(
+        email="owner@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="already in use"):
+        update_email(
+            user_id=result["id"],
+            current_password="securepass1",
+            new_email="taken@example.com",
+            session=db_session,
+        )
+
+
+def test_update_password_success(db_session: Session) -> None:
+    """
+    update_password succeeds and the new password can be used to log in.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwchange@example.com", password="oldpassword1", session=db_session
+    )
+    update_password(
+        user_id=result["id"],
+        current_password="oldpassword1",
+        new_password="newpassword1",
+        confirm_password="newpassword1",
+        session=db_session,
+    )
+
+    login_result = login_user(
+        email="pwchange@example.com", password="newpassword1", session=db_session
+    )
+    assert "access_token" in login_result
+
+
+def test_update_password_mismatch_raises(db_session: Session) -> None:
+    """
+    update_password raises ValueError when confirm_password does not match.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwmismatch@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="do not match"):
+        update_password(
+            user_id=result["id"],
+            current_password="securepass1",
+            new_password="newpassword1",
+            confirm_password="differentpassword",
+            session=db_session,
+        )
+
+
+def test_update_password_wrong_current_raises(db_session: Session) -> None:
+    """
+    update_password raises ValueError when current_password is wrong.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwwrong@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="Current password is incorrect"):
+        update_password(
+            user_id=result["id"],
+            current_password="wrongcurrent",
+            new_password="newpassword1",
+            confirm_password="newpassword1",
+            session=db_session,
+        )
+
+
+def test_update_profile_settings_expenses(db_session: Session) -> None:
+    """
+    update_profile_settings persists monthly_expenses and recalculates the stored value.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="settings@example.com", password="securepass1", session=db_session
+    )
+    profile = update_profile_settings(
+        user_id=result["id"],
+        risk_level=None,
+        monthly_expenses=5000.0,
+        session=db_session,
+    )
+
+    assert profile.monthly_expenses == 5000.0
+    assert profile.risk_level == "moderate"
+
+
+def test_update_profile_settings_risk_level(db_session: Session) -> None:
+    """
+    update_profile_settings persists risk_level.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="risklevel@example.com", password="securepass1", session=db_session
+    )
+    profile = update_profile_settings(
+        user_id=result["id"],
+        risk_level="aggressive",
+        monthly_expenses=None,
+        session=db_session,
+    )
+
+    assert profile.risk_level == "aggressive"
+
+
+def test_update_profile_settings_no_fields_raises(db_session: Session) -> None:
+    """
+    update_profile_settings raises ValueError when neither field is provided.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="nofields@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="At least one field"):
+        update_profile_settings(
+            user_id=result["id"],
+            risk_level=None,
+            monthly_expenses=None,
+            session=db_session,
+        )
