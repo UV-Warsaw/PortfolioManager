@@ -99,13 +99,14 @@ export async function requestPasswordReset(email: string): Promise<void> {
 }
 
 export async function confirmPasswordReset(
-  token: string,
+  email: string,
+  code: string,
   newPassword: string,
 ): Promise<void> {
   const res = await fetch(`${API_URL}/auth/password-reset/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, new_password: newPassword }),
+    body: JSON.stringify({ email, code, new_password: newPassword }),
   })
 
   if (!res.ok) {
