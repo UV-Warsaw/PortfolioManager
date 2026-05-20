@@ -10,9 +10,10 @@ class PasswordResetRequestSchema(BaseModel):
 
 
 class PasswordResetConfirmSchema(BaseModel):
-    """Payload for completing a password-reset flow."""
+    """Payload for completing a password-reset flow using a verification code."""
 
-    token: str
+    email: EmailStr
+    code: str
     new_password: str
 
     @field_validator("new_password")
