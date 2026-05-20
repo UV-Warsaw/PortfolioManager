@@ -1,5 +1,6 @@
 from app.models.bonds import Bond  # noqa: F401
 from app.models.cash import CashAccount  # noqa: F401
+from app.models.password_reset import PasswordResetToken  # noqa: F401
 from app.models.portfolio import Asset, Dividend, Transaction  # noqa: F401
 from app.models.token_blacklist import TokenBlacklist  # noqa: F401
 from app.models.user import User  # noqa: F401

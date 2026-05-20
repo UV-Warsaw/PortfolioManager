@@ -89,3 +89,27 @@ export async function getMe(token: string): Promise<MeResponse> {
 
   return res.json() as Promise<MeResponse>
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await fetch(`${API_URL}/auth/password-reset/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  const res = await fetch(`${API_URL}/auth/password-reset/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, new_password: newPassword }),
+  })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ detail: 'Unknown error' }))
+    throw new ApiError(res.status, body.detail ?? 'Password reset failed')
+  }
+}

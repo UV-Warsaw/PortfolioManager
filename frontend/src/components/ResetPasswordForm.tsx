@@ -1,31 +1,40 @@
 import React, { useState } from 'react'
-import { ApiError, loginUser } from '../services/authApi'
+import { ApiError, confirmPasswordReset } from '../services/authApi'
 
 interface Props {
-  onSuccess: (email: string, token: string) => void
-  onSwitchToRegister: () => void
-  onForgotPassword: () => void
+  token: string
+  onSuccess: () => void
 }
 
-const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister, onForgotPassword }) => {
-  const [email, setEmail] = useState('')
+const ResetPasswordForm: React.FC<Props> = ({ token, onSuccess }) => {
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+
     setLoading(true)
     try {
-      const result = await loginUser({ email, password })
-      localStorage.setItem('access_token', result.access_token)
-      onSuccess(result.email, result.access_token)
+      await confirmPasswordReset(token, password)
+      onSuccess()
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setError('Invalid email or password.')
+      if (err instanceof ApiError && err.status === 400) {
+        setError('This reset link is invalid or has already been used.')
       } else {
-        setError('Login failed. Please try again.')
+        setError('Something went wrong. Please request a new reset link.')
       }
     } finally {
       setLoading(false)
@@ -34,44 +43,22 @@ const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister, onForgotPas
 
   return (
     <form onSubmit={(e) => { void handleSubmit(e) }} noValidate>
+      <p className="text-sm mb-6" style={{ color: 'var(--muted)' }}>
+        Choose a new password for your account.
+      </p>
+
       <div className="mb-4">
         <label
-          htmlFor="email"
+          htmlFor="new-password"
           className="block text-xs font-medium uppercase tracking-widest mb-1"
           style={{ color: 'var(--muted)' }}
         >
-          Email
+          New password
         </label>
         <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg px-3 py-2 text-sm outline-none
-            focus-visible:ring-2 focus-visible:ring-indigo-500"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'var(--text)',
-          }}
-          placeholder="you@example.com"
-        />
-      </div>
-
-      <div className="mb-6">
-        <label
-          htmlFor="password"
-          className="block text-xs font-medium uppercase tracking-widest mb-1"
-          style={{ color: 'var(--muted)' }}
-        >
-          Password
-        </label>
-        <input
-          id="password"
+          id="new-password"
           type="password"
-          autoComplete="current-password"
+          autoComplete="new-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -82,7 +69,33 @@ const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister, onForgotPas
             border: '1px solid rgba(255,255,255,0.1)',
             color: 'var(--text)',
           }}
-          placeholder="Your password"
+          placeholder="Min. 8 characters"
+        />
+      </div>
+
+      <div className="mb-6">
+        <label
+          htmlFor="confirm-password"
+          className="block text-xs font-medium uppercase tracking-widest mb-1"
+          style={{ color: 'var(--muted)' }}
+        >
+          Confirm password
+        </label>
+        <input
+          id="confirm-password"
+          type="password"
+          autoComplete="new-password"
+          required
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none
+            focus-visible:ring-2 focus-visible:ring-indigo-500"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'var(--text)',
+          }}
+          placeholder="Repeat new password"
         />
       </div>
 
@@ -107,35 +120,10 @@ const LoginForm: React.FC<Props> = ({ onSuccess, onSwitchToRegister, onForgotPas
           disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
         style={{ background: 'var(--accent)', color: '#fff' }}
       >
-        {loading ? 'Signing in...' : 'Sign in'}
+        {loading ? 'Saving...' : 'Set new password'}
       </button>
-
-      <p className="mt-4 text-center text-xs" style={{ color: 'var(--muted)' }}>
-        No account?{' '}
-        <button
-          type="button"
-          onClick={onSwitchToRegister}
-          className="font-semibold underline underline-offset-2 focus-visible:outline-none
-            focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
-          style={{ color: 'var(--accent)' }}
-        >
-          Create one
-        </button>
-      </p>
-
-      <p className="mt-2 text-center text-xs" style={{ color: 'var(--muted)' }}>
-        <button
-          type="button"
-          onClick={onForgotPassword}
-          className="underline underline-offset-2 focus-visible:outline-none
-            focus-visible:ring-2 focus-visible:ring-indigo-500 rounded"
-          style={{ color: 'var(--muted)' }}
-        >
-          Forgot password?
-        </button>
-      </p>
     </form>
   )
 }
 
-export default LoginForm
+export default ResetPasswordForm
