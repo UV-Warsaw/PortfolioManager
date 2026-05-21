@@ -46,48 +46,48 @@ def _register_and_login(client) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Unit: TransactionRepository.bulk_create_with_dedup
+# Unit: TransactionRepository.delete_by_account
 # ---------------------------------------------------------------------------
 
 
-def test_bulk_create_inserts_new_records(db_session: Session) -> None:
-    """First import creates all records."""
+def test_delete_by_account_removes_records(db_session: Session) -> None:
+    """delete_by_account removes all transactions for the target account."""
     repo = TransactionRepository(db_session)
-    records = [_make_tx("AAPL", 5.0), _make_tx("MSFT", 3.0)]
-    created, skipped = repo.bulk_create_with_dedup(records)
-    assert len(created) == 2
-    assert skipped == 0
+    repo.bulk_create(
+        [_make_tx("AAPL", 5.0, account="PLN"), _make_tx("MSFT", 3.0, account="PLN")]
+    )
+    repo.bulk_create([_make_tx("TSLA", 2.0, account="IKE")])
+
+    deleted = repo.delete_by_account("PLN")
+
+    assert deleted == 2
+    assert repo.get_holdings(account="PLN") == []
+    ike_holdings = repo.get_holdings(account="IKE")
+    assert len(ike_holdings) == 1
+    assert ike_holdings[0]["ticker"] == "TSLA"
 
 
-def test_bulk_create_dedup_skips_exact_duplicates(db_session: Session) -> None:
-    """Second import of the same records results in zero new inserts."""
+def test_delete_by_account_returns_zero_when_none(db_session: Session) -> None:
+    """delete_by_account returns 0 when no records exist for the account."""
     repo = TransactionRepository(db_session)
-    records = [_make_tx("AAPL", 5.0), _make_tx("MSFT", 3.0)]
-    repo.bulk_create_with_dedup(records)
-    created, skipped = repo.bulk_create_with_dedup(records)
-    assert len(created) == 0
-    assert skipped == 2
+    deleted = repo.delete_by_account("USD")
+    assert deleted == 0
 
 
-def test_bulk_create_dedup_partial_overlap(db_session: Session) -> None:
-    """Only new records are inserted when file has both old and new rows."""
+def test_delete_by_account_reimport_replaces_data(db_session: Session) -> None:
+    """Re-import via delete+bulk_create always produces exactly one set of records."""
     repo = TransactionRepository(db_session)
-    first = [_make_tx("AAPL", 5.0)]
-    repo.bulk_create_with_dedup(first)
-    second = [_make_tx("AAPL", 5.0), _make_tx("TSLA", 2.0)]
-    created, skipped = repo.bulk_create_with_dedup(second)
-    assert len(created) == 1
-    assert skipped == 1
-    assert created[0].ticker == "TSLA"
+    records = [_make_tx("AAPL", 10.0, account="PLN")]
 
+    repo.delete_by_account("PLN")
+    repo.bulk_create(records)
+    # Simulate re-import: delete then insert again
+    repo.delete_by_account("PLN")
+    repo.bulk_create(records)
 
-def test_dedup_different_quantity_is_not_duplicate(db_session: Session) -> None:
-    """Same ticker+date+account but different quantity is treated as a new record."""
-    repo = TransactionRepository(db_session)
-    repo.bulk_create_with_dedup([_make_tx("AAPL", 5.0)])
-    created, skipped = repo.bulk_create_with_dedup([_make_tx("AAPL", 10.0)])
-    assert len(created) == 1
-    assert skipped == 0
+    holdings = repo.get_holdings(account="PLN")
+    assert len(holdings) == 1
+    assert holdings[0]["quantity"] == pytest.approx(10.0)
 
 
 # ---------------------------------------------------------------------------
@@ -233,8 +233,8 @@ def test_get_holdings_endpoint_returns_active_positions(client) -> None:
     assert "MSFT" in tickers
 
 
-def test_get_holdings_endpoint_dedup(client) -> None:
-    """Uploading the same file twice does not duplicate holdings."""
+def test_get_holdings_endpoint_reimport_replaces_data(client) -> None:
+    """Uploading the same file twice keeps exactly one copy of each position."""
     from io import BytesIO
 
     import openpyxl

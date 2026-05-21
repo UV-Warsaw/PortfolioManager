@@ -94,6 +94,24 @@ class TransactionRepository(BaseRepository[Transaction]):
             self.session.refresh(tx)
         return created, skipped
 
+    def delete_by_account(self, account: str) -> int:
+        """Delete all transactions for the given account and return the deleted row count.
+
+        Used during re-import to clear stale data before inserting fresh records.
+
+        Args:
+            account: Account identifier (IKE, PLN, USD).
+
+        Returns:
+            Number of rows deleted.
+        """
+        from sqlmodel import delete as sql_delete
+
+        stmt = sql_delete(Transaction).where(Transaction.account == account)
+        result = self.session.exec(stmt)
+        self.session.commit()
+        return result.rowcount
+
     def get_holdings(self, account: str | None = None) -> list[dict]:
         """Return active holdings aggregated per ticker and account.
 
@@ -241,6 +259,24 @@ class DividendRepository(BaseRepository[Dividend]):
         for div in created:
             self.session.refresh(div)
         return created
+
+    def delete_by_account(self, account: str) -> int:
+        """Delete all dividends for the given account and return the deleted row count.
+
+        Used during re-import to clear stale data before inserting fresh records.
+
+        Args:
+            account: Account identifier (IKE, PLN, USD).
+
+        Returns:
+            Number of rows deleted.
+        """
+        from sqlmodel import delete as sql_delete
+
+        stmt = sql_delete(Dividend).where(Dividend.account == account)
+        result = self.session.exec(stmt)
+        self.session.commit()
+        return result.rowcount
 
     def bulk_create_with_dedup(self, records: list[dict]) -> tuple[list[Dividend], int]:
         """Insert dividends, skipping duplicates keyed by (date, ticker, amount, account).

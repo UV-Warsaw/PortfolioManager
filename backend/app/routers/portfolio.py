@@ -36,10 +36,11 @@ async def upload_portfolio_file(
     session: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> ImportResponse:
-    """Upload an XTB Excel export and import transactions and dividends.
+    """Upload an XTB Excel export and replace all data for the given account.
 
-    Duplicate records (matched by date, ticker, quantity/amount, account) are
-    silently skipped and reported in the response.
+    Existing transactions and dividends for the account are deleted before
+    inserting the parsed records, so re-importing the same file always
+    produces a consistent result.
 
     Args:
         file: The Excel file (.xlsx or .xls).
@@ -48,7 +49,7 @@ async def upload_portfolio_file(
         credentials: Bearer token credentials.
 
     Returns:
-        ImportResponse with counts of imported and skipped records.
+        ImportResponse with counts of imported records.
 
     Raises:
         HTTPException 401: Missing or invalid token.
@@ -81,8 +82,10 @@ async def upload_portfolio_file(
     try:
         tx_repo = TransactionRepository(session)
         div_repo = DividendRepository(session)
-        created_tx, skipped_tx = tx_repo.bulk_create_with_dedup(records["transactions"])
-        created_div, skipped_div = div_repo.bulk_create_with_dedup(records["dividends"])
+        tx_repo.delete_by_account(acc)
+        div_repo.delete_by_account(acc)
+        created_tx = tx_repo.bulk_create(records["transactions"])
+        created_div = div_repo.bulk_create(records["dividends"])
     except Exception as exc:
         logger.exception("Database insert failed")
         raise HTTPException(status_code=500, detail="Failed to save records") from exc
@@ -90,8 +93,6 @@ async def upload_portfolio_file(
     return ImportResponse(
         imported_transactions=len(created_tx),
         imported_dividends=len(created_div),
-        skipped_transactions=skipped_tx,
-        skipped_dividends=skipped_div,
         account=acc,
     )
 

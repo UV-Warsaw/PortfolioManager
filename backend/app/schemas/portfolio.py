@@ -66,6 +66,4 @@ class ImportResponse(BaseModel):
 
     imported_transactions: int
     imported_dividends: int
-    skipped_transactions: int = 0
-    skipped_dividends: int = 0
     account: str
