@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
+import ImportForm from './components/ImportForm'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -172,16 +173,8 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            <div
-              className="rounded-xl p-6 mb-6 text-center"
-              style={{
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.06)',
-              }}
-            >
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                Portfolio dashboard coming soon.
-              </p>
+            <div className="mb-6">
+              <ImportForm token={localStorage.getItem('access_token') ?? ''} />
             </div>
 
             <div className="flex gap-2">

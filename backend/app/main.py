@@ -9,7 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import create_db_and_tables
-from app.routers import auth_router, password_reset_router, profile_router
+from app.routers import (
+    auth_router,
+    password_reset_router,
+    portfolio_router,
+    profile_router,
+)
 
 
 def _setup_logging() -> None:
@@ -77,6 +82,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(password_reset_router)
+app.include_router(portfolio_router)
 app.include_router(profile_router)
 
 
