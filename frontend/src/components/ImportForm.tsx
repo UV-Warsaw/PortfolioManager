@@ -12,9 +12,10 @@ interface ImportResult {
 
 interface Props {
   token: string
+  onImportSuccess?: () => void
 }
 
-const ImportForm: React.FC<Props> = ({ token }) => {
+const ImportForm: React.FC<Props> = ({ token, onImportSuccess }) => {
   const [account, setAccount] = useState<AccountType>('PLN')
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -63,6 +64,7 @@ const ImportForm: React.FC<Props> = ({ token }) => {
 
       const data: ImportResult = await res.json()
       setResult(data)
+      onImportSuccess?.()
       setFile(null)
       if (fileRef.current) fileRef.current.value = ''
     } catch (err) {
