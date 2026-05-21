@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
 import PortfolioValueCards from './components/PortfolioValueCards'
+import TopHoldingsChart from './components/TopHoldingsChart'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -277,6 +278,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <PortfolioValueCards token={token} refreshKey={portfolioRefreshKey} />
+            <TopHoldingsChart token={token} refreshKey={portfolioRefreshKey} />
             <ImportForm token={token} onImportSuccess={handleImportSuccess} />
           </div>
         ) : null}
