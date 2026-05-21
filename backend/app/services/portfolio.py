@@ -5,7 +5,7 @@ import logging
 from sqlmodel import Session
 
 from app.repositories.portfolio import TransactionRepository
-from app.schemas.portfolio import HoldingRead
+from app.schemas.portfolio import HoldingRead, PortfolioValueResponse
 
 logger = logging.getLogger("portfolio_backend.services.portfolio")
 
@@ -31,3 +31,22 @@ def get_active_holdings(
         for r in raw
     ]
     return sorted(holdings, key=lambda h: (h.account, h.ticker))
+
+
+def get_portfolio_value(session: Session) -> PortfolioValueResponse:
+    """Return net cost basis per account and aggregate total.
+
+    Values represent the net capital invested per account (BUY amounts minus
+    SELL amounts). All amounts are stored in PLN — USD transactions are
+    converted at import time.
+
+    Args:
+        session: Database session.
+
+    Returns:
+        PortfolioValueResponse with per-account values and aggregate total.
+    """
+    repo = TransactionRepository(session)
+    accounts = repo.get_account_values()
+    total = round(sum(accounts.values()), 2)
+    return PortfolioValueResponse(accounts=accounts, total=total)

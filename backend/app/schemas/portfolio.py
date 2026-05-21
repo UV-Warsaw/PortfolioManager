@@ -41,6 +41,13 @@ class HoldingRead(BaseModel):
     quantity: float
 
 
+class PortfolioValueResponse(BaseModel):
+    """Read schema for portfolio cost basis grouped by account."""
+
+    accounts: dict[str, float]
+    total: float
+
+
 class ImportResponse(BaseModel):
     """Response schema for the portfolio upload endpoint."""
 

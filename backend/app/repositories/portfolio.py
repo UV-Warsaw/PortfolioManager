@@ -128,6 +128,33 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[2] is not None and row[2] > 0
         ]
 
+    def get_account_values(self) -> dict[str, float]:
+        """Return net cost basis per account (BUY amounts minus SELL amounts).
+
+        Values are stored in PLN — USD transactions are converted during import.
+
+        Returns:
+            Dict mapping account name to net invested value (PLN).
+        """
+        net_val = func.sum(
+            case(
+                (Transaction.type == "BUY", Transaction.amount),
+                else_=-Transaction.amount,
+            )
+        ).label("net_value")
+
+        stmt = (
+            select(Transaction.account, net_val)
+            .where(Transaction.amount.is_not(None))
+            .group_by(Transaction.account)
+        )
+        rows = self.session.exec(stmt).all()
+        return {
+            row[0]: round(float(row[1]), 2)
+            for row in rows
+            if row[0] is not None and row[1] is not None
+        }
+
 
 class DividendRepository(BaseRepository[Dividend]):
     """Repository for Dividend database operations."""

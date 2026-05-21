@@ -9,10 +9,10 @@ from sqlmodel import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.repositories.portfolio import DividendRepository, TransactionRepository
-from app.schemas.portfolio import HoldingRead, ImportResponse
+from app.schemas.portfolio import HoldingRead, ImportResponse, PortfolioValueResponse
 from app.services.auth import get_current_user
 from app.services.excel_import import VALID_ACCOUNTS, parse_excel_to_records
-from app.services.portfolio import get_active_holdings
+from app.services.portfolio import get_active_holdings, get_portfolio_value
 
 logger = logging.getLogger("portfolio_backend.routers.portfolio")
 
@@ -121,3 +121,27 @@ def get_holdings(
                 detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
             )
     return get_active_holdings(session, account=acc)
+
+
+@router.get("/value", response_model=PortfolioValueResponse)
+def get_portfolio_value_endpoint(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> PortfolioValueResponse:
+    """Return net cost basis per account and aggregate total.
+
+    Values represent capital invested (BUY amounts minus SELL amounts) in PLN.
+    USD account transactions are converted to PLN at import time.
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        PortfolioValueResponse with per-account values and total.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+    """
+    get_current_user(credentials, session)
+    return get_portfolio_value(session)
