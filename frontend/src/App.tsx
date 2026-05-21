@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
+import PortfolioValueCards from './components/PortfolioValueCards'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -270,6 +271,7 @@ const App: React.FC = () => {
                 Importuj transakcje z XTB i sledz aktywne pozycje
               </p>
             </div>
+            <PortfolioValueCards token={token} />
             <ImportForm token={token} />
           </div>
         ) : null}
