@@ -129,7 +129,10 @@ class TransactionRepository(BaseRepository[Transaction]):
         ]
 
     def get_account_values(self) -> dict[str, float]:
-        """Return net cost basis per account (BUY amounts minus SELL amounts).
+        """Return net cost basis per account — only BUY/SELL stock transactions.
+
+        Cash-operation rows (type != BUY/SELL or ticker IS NULL) are excluded to
+        avoid dividend, deposit and transfer amounts distorting the cost basis.
 
         Values are stored in PLN — USD transactions are converted during import.
 
@@ -145,7 +148,11 @@ class TransactionRepository(BaseRepository[Transaction]):
 
         stmt = (
             select(Transaction.account, net_val)
-            .where(Transaction.amount.is_not(None))
+            .where(
+                Transaction.amount.is_not(None),
+                Transaction.ticker.is_not(None),
+                Transaction.type.in_(["BUY", "SELL"]),
+            )
             .group_by(Transaction.account)
         )
         rows = self.session.exec(stmt).all()
@@ -154,6 +161,40 @@ class TransactionRepository(BaseRepository[Transaction]):
             for row in rows
             if row[0] is not None and row[1] is not None
         }
+
+    def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
+        """Return the top N holdings by net cost basis across all accounts.
+
+        Only BUY/SELL transactions with a non-null ticker are considered.
+        Holdings with a non-positive net cost are excluded.
+
+        Args:
+            limit: Maximum number of holdings to return.
+
+        Returns:
+            List of (ticker, cost_basis) tuples ordered by cost_basis descending.
+        """
+        net_val = func.sum(
+            case(
+                (Transaction.type == "BUY", Transaction.amount),
+                else_=-Transaction.amount,
+            )
+        ).label("cost_basis")
+
+        stmt = (
+            select(Transaction.ticker, net_val)
+            .where(
+                Transaction.amount.is_not(None),
+                Transaction.ticker.is_not(None),
+                Transaction.type.in_(["BUY", "SELL"]),
+            )
+            .group_by(Transaction.ticker)
+            .having(net_val > 0)
+            .order_by(net_val.desc())
+            .limit(limit)
+        )
+        rows = self.session.exec(stmt).all()
+        return [(row[0], round(float(row[1]), 2)) for row in rows if row[0] is not None]
 
 
 class DividendRepository(BaseRepository[Dividend]):

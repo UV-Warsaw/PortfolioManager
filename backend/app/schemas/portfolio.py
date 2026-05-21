@@ -48,6 +48,19 @@ class PortfolioValueResponse(BaseModel):
     total: float
 
 
+class TopHoldingItem(BaseModel):
+    """Read schema for a single holding ranked by cost basis."""
+
+    ticker: str
+    cost_basis: float
+
+
+class TopHoldingsResponse(BaseModel):
+    """Read schema for the top-N holdings by cost basis."""
+
+    items: list[TopHoldingItem]
+
+
 class ImportResponse(BaseModel):
     """Response schema for the portfolio upload endpoint."""
 

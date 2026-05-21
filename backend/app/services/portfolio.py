@@ -5,7 +5,12 @@ import logging
 from sqlmodel import Session
 
 from app.repositories.portfolio import TransactionRepository
-from app.schemas.portfolio import HoldingRead, PortfolioValueResponse
+from app.schemas.portfolio import (
+    HoldingRead,
+    PortfolioValueResponse,
+    TopHoldingItem,
+    TopHoldingsResponse,
+)
 
 logger = logging.getLogger("portfolio_backend.services.portfolio")
 
@@ -50,3 +55,22 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
     accounts = repo.get_account_values()
     total = round(sum(accounts.values()), 2)
     return PortfolioValueResponse(accounts=accounts, total=total)
+
+
+def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
+    """Return the top holdings by net cost basis.
+
+    Args:
+        session: Database session.
+        limit: Maximum number of holdings to return (default 10).
+
+    Returns:
+        TopHoldingsResponse with items ordered by cost_basis descending.
+    """
+    repo = TransactionRepository(session)
+    rows = repo.get_top_holdings(limit=limit)
+    items = [
+        TopHoldingItem(ticker=ticker, cost_basis=cost_basis)
+        for ticker, cost_basis in rows
+    ]
+    return TopHoldingsResponse(items=items)
