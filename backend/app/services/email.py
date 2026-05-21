@@ -1,8 +1,8 @@
 """Email service for sending transactional messages via SMTP.
 
-If SMTP is not configured (smtp_host is None), the reset URL is logged at
-WARNING level so developers can complete the flow locally without a real mail
-server.
+If SMTP is not configured (smtp_host is None), the verification code is logged
+at WARNING level so developers can complete the flow locally without a real
+mail server.
 """
 
 import logging
@@ -15,42 +15,39 @@ from ..core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def send_password_reset_email(email: str, reset_url: str) -> None:
+def send_password_reset_code(email: str, code: str) -> None:
     """
-    Send a password-reset email to the given address.
+    Send a 6-digit password-reset verification code to the given address.
 
-    If SMTP credentials are not configured, logs the reset URL at WARNING
-    level so local development flows remain functional without a mail server.
+    If SMTP credentials are not configured, logs the code at WARNING level
+    so local development flows remain functional without a mail server.
 
     Args:
         email: Recipient email address.
-        reset_url: Full URL the user must visit to complete the reset.
+        code: 6-digit verification code to send.
     """
     if not settings.smtp_host:
         logger.warning(
-            "SMTP not configured — password reset URL for %s: %s",
+            "SMTP not configured - password reset code for %s: %s",
             email,
-            reset_url,
+            code,
         )
         return
 
-    subject = "Reset your Portfolio Manager password"
+    subject = "Your Portfolio Manager verification code"
     body_text = (
         f"You requested a password reset.\n\n"
-        f"Click the link below to set a new password. "
-        f"The link expires in {settings.password_reset_expire_hours} hour(s).\n\n"
-        f"{reset_url}\n\n"
+        f"Your verification code is: {code}\n\n"
+        f"It expires in {settings.password_reset_expire_hours} hour(s).\n\n"
         f"If you did not request this, ignore this message."
     )
     body_html = f"""
 <html>
   <body>
     <p>You requested a password reset.</p>
-    <p>
-      Click the link below to set a new password.
-      The link expires in <strong>{settings.password_reset_expire_hours} hour(s)</strong>.
-    </p>
-    <p><a href="{reset_url}">{reset_url}</a></p>
+    <p>Your verification code is:</p>
+    <p style="font-size:2em;letter-spacing:0.2em;font-weight:bold">{code}</p>
+    <p>It expires in <strong>{settings.password_reset_expire_hours} hour(s)</strong>.</p>
     <p>If you did not request this, ignore this message.</p>
   </body>
 </html>
@@ -70,4 +67,4 @@ def send_password_reset_email(email: str, reset_url: str) -> None:
             server.login(settings.smtp_user, settings.smtp_password)
         server.sendmail(settings.smtp_from, email, message.as_string())
 
-    logger.info("Password reset email sent to %s", email)
+    logger.info("Password reset code sent to %s", email)

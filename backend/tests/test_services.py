@@ -152,7 +152,7 @@ def test_request_password_reset_issues_token_for_registered_email(
 
     register_user(email="pr@example.com", password="securepass", session=db_session)
 
-    with patch("app.services.password_reset.send_password_reset_email"):
+    with patch("app.services.password_reset.send_password_reset_code"):
         request_password_reset(email="pr@example.com", session=db_session)
 
     from sqlmodel import select
@@ -176,7 +176,7 @@ def test_request_password_reset_silent_for_unknown_email(
 
     from app.services.password_reset import request_password_reset
 
-    with patch("app.services.password_reset.send_password_reset_email") as mock_send:
+    with patch("app.services.password_reset.send_password_reset_code") as mock_send:
         request_password_reset(email="ghost@example.com", session=db_session)
         mock_send.assert_not_called()
 
@@ -185,7 +185,6 @@ def test_confirm_password_reset_updates_password(db_session: Session) -> None:
     """
     confirm_password_reset changes the user's password and marks token used.
     """
-    import secrets
     from datetime import UTC, datetime, timedelta
 
     from app.repositories.password_reset import PasswordResetTokenRepository
@@ -194,13 +193,16 @@ def test_confirm_password_reset_updates_password(db_session: Session) -> None:
 
     register_user(email="cpw@example.com", password="oldpassword", session=db_session)
 
-    raw_token = secrets.token_urlsafe(32)
+    raw_token = "123456"
     expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
     repo = PasswordResetTokenRepository(db_session)
     repo.create(raw_token=raw_token, email="cpw@example.com", expires_at=expires_at)
 
     confirm_password_reset(
-        raw_token=raw_token, new_password="newpassword1", session=db_session
+        email="cpw@example.com",
+        raw_code=raw_token,
+        new_password="newpassword1",
+        session=db_session,
     )
 
     result = login_user(
@@ -217,7 +219,8 @@ def test_confirm_password_reset_invalid_token_raises(db_session: Session) -> Non
 
     with pytest.raises(ValueError, match="Invalid or expired"):
         confirm_password_reset(
-            raw_token="bogus-token",
+            email="nobody@example.com",
+            raw_code="000000",
             new_password="newpassword1",
             session=db_session,
         )
@@ -227,7 +230,6 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
     """
     confirm_password_reset marks the token as used; a second attempt raises ValueError.
     """
-    import secrets
     from datetime import UTC, datetime, timedelta
 
     from app.repositories.password_reset import PasswordResetTokenRepository
@@ -235,16 +237,228 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
 
     register_user(email="reuse@example.com", password="oldpassword", session=db_session)
 
-    raw_token = secrets.token_urlsafe(32)
+    raw_token = "123456"
     expires_at = (datetime.now(UTC) + timedelta(hours=1)).isoformat()
     repo = PasswordResetTokenRepository(db_session)
     repo.create(raw_token=raw_token, email="reuse@example.com", expires_at=expires_at)
 
     confirm_password_reset(
-        raw_token=raw_token, new_password="firstnewpass", session=db_session
+        email="reuse@example.com",
+        raw_code=raw_token,
+        new_password="firstnewpass",
+        session=db_session,
     )
 
     with pytest.raises(ValueError, match="Invalid or expired"):
         confirm_password_reset(
-            raw_token=raw_token, new_password="secondnewpass", session=db_session
+            email="reuse@example.com",
+            raw_code=raw_token,
+            new_password="secondnewpass",
+            session=db_session,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Profile service unit tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_profile_returns_profile(db_session: Session) -> None:
+    """
+    get_profile returns ProfileResponse with correct email and defaults.
+    """
+    from app.services.profile import get_profile
+
+    result = register_user(
+        email="profile@example.com", password="securepass1", session=db_session
+    )
+    profile = get_profile(user_id=result["id"], session=db_session)
+
+    assert profile.email == "profile@example.com"
+    assert profile.risk_level == "moderate"
+    assert profile.monthly_expenses == 0.0
+    assert isinstance(profile.id, int)
+
+
+def test_get_profile_raises_for_missing_user(db_session: Session) -> None:
+    """
+    get_profile raises ValueError when the user does not exist.
+    """
+    from app.services.profile import get_profile
+
+    with pytest.raises(ValueError, match="User not found"):
+        get_profile(user_id=999, session=db_session)
+
+
+def test_update_email_success(db_session: Session) -> None:
+    """
+    update_email changes the email when current password is correct.
+    """
+    from app.services.profile import update_email
+
+    result = register_user(
+        email="oldemail@example.com", password="securepass1", session=db_session
+    )
+    profile = update_email(
+        user_id=result["id"],
+        current_password="securepass1",
+        new_email="newemail@example.com",
+        session=db_session,
+    )
+
+    assert profile.email == "newemail@example.com"
+
+
+def test_update_email_wrong_password_raises(db_session: Session) -> None:
+    """
+    update_email raises ValueError when current_password is wrong.
+    """
+    from app.services.profile import update_email
+
+    result = register_user(
+        email="emailwrong@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="Current password is incorrect"):
+        update_email(
+            user_id=result["id"],
+            current_password="wrongpassword",
+            new_email="other@example.com",
+            session=db_session,
+        )
+
+
+def test_update_email_duplicate_raises(db_session: Session) -> None:
+    """
+    update_email raises ValueError when the new email is already taken.
+    """
+    from app.services.profile import update_email
+
+    register_user(email="taken@example.com", password="securepass1", session=db_session)
+    result = register_user(
+        email="owner@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="already in use"):
+        update_email(
+            user_id=result["id"],
+            current_password="securepass1",
+            new_email="taken@example.com",
+            session=db_session,
+        )
+
+
+def test_update_password_success(db_session: Session) -> None:
+    """
+    update_password succeeds and the new password can be used to log in.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwchange@example.com", password="oldpassword1", session=db_session
+    )
+    update_password(
+        user_id=result["id"],
+        current_password="oldpassword1",
+        new_password="newpassword1",
+        confirm_password="newpassword1",
+        session=db_session,
+    )
+
+    login_result = login_user(
+        email="pwchange@example.com", password="newpassword1", session=db_session
+    )
+    assert "access_token" in login_result
+
+
+def test_update_password_mismatch_raises(db_session: Session) -> None:
+    """
+    update_password raises ValueError when confirm_password does not match.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwmismatch@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="do not match"):
+        update_password(
+            user_id=result["id"],
+            current_password="securepass1",
+            new_password="newpassword1",
+            confirm_password="differentpassword",
+            session=db_session,
+        )
+
+
+def test_update_password_wrong_current_raises(db_session: Session) -> None:
+    """
+    update_password raises ValueError when current_password is wrong.
+    """
+    from app.services.profile import update_password
+
+    result = register_user(
+        email="pwwrong@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="Current password is incorrect"):
+        update_password(
+            user_id=result["id"],
+            current_password="wrongcurrent",
+            new_password="newpassword1",
+            confirm_password="newpassword1",
+            session=db_session,
+        )
+
+
+def test_update_profile_settings_expenses(db_session: Session) -> None:
+    """
+    update_profile_settings persists monthly_expenses and recalculates the stored value.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="settings@example.com", password="securepass1", session=db_session
+    )
+    profile = update_profile_settings(
+        user_id=result["id"],
+        risk_level=None,
+        monthly_expenses=5000.0,
+        session=db_session,
+    )
+
+    assert profile.monthly_expenses == 5000.0
+    assert profile.risk_level == "moderate"
+
+
+def test_update_profile_settings_risk_level(db_session: Session) -> None:
+    """
+    update_profile_settings persists risk_level.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="risklevel@example.com", password="securepass1", session=db_session
+    )
+    profile = update_profile_settings(
+        user_id=result["id"],
+        risk_level="aggressive",
+        monthly_expenses=None,
+        session=db_session,
+    )
+
+    assert profile.risk_level == "aggressive"
+
+
+def test_update_profile_settings_no_fields_raises(db_session: Session) -> None:
+    """
+    update_profile_settings raises ValueError when neither field is provided.
+    """
+    from app.services.profile import update_profile_settings
+
+    result = register_user(
+        email="nofields@example.com", password="securepass1", session=db_session
+    )
+    with pytest.raises(ValueError, match="At least one field"):
+        update_profile_settings(
+            user_id=result["id"],
+            risk_level=None,
+            monthly_expenses=None,
+            session=db_session,
         )

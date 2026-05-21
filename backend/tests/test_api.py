@@ -209,14 +209,14 @@ def test_password_reset_request_registered_email_returns_202(
         json={"email": "reset@example.com", "password": "strongpass1"},
     )
 
-    with patch("app.services.password_reset.send_password_reset_email"):
+    with patch("app.services.password_reset.send_password_reset_code"):
         response = client.post(
             "/auth/password-reset/request",
             json={"email": "reset@example.com"},
         )
 
     assert response.status_code == 202
-    assert "reset link" in response.json()["message"]
+    assert "verification code" in response.json()["message"]
 
 
 def test_password_reset_request_unknown_email_also_returns_202(
@@ -244,23 +244,27 @@ def test_password_reset_confirm_success(client: TestClient) -> None:
 
     captured: list[str] = []
 
-    def fake_send(email: str, reset_url: str) -> None:
-        captured.append(reset_url)
+    def fake_send(email: str, code: str) -> None:
+        captured.append(code)
 
     with patch(
-        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+        "app.services.password_reset.send_password_reset_code", side_effect=fake_send
     ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "confirm@example.com"},
         )
 
-    assert captured, "No reset URL was captured"
-    raw_token = captured[0].split("token=")[-1]
+    assert captured, "No code was captured"
+    raw_code = captured[0]
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "newpassword1"},
+        json={
+            "email": "confirm@example.com",
+            "code": raw_code,
+            "new_password": "newpassword1",
+        },
     )
     assert response.status_code == 200
     assert "Password updated" in response.json()["message"]
@@ -283,27 +287,35 @@ def test_password_reset_confirm_token_cannot_be_reused(client: TestClient) -> No
 
     captured: list[str] = []
 
-    def fake_send(email: str, reset_url: str) -> None:
-        captured.append(reset_url)
+    def fake_send(email: str, code: str) -> None:
+        captured.append(code)
 
     with patch(
-        "app.services.password_reset.send_password_reset_email", side_effect=fake_send
+        "app.services.password_reset.send_password_reset_code", side_effect=fake_send
     ):
         client.post(
             "/auth/password-reset/request",
             json={"email": "reuse@example.com"},
         )
 
-    raw_token = captured[0].split("token=")[-1]
+    raw_code = captured[0]
 
     client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "firstnewpass"},
+        json={
+            "email": "reuse@example.com",
+            "code": raw_code,
+            "new_password": "firstnewpass",
+        },
     )
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": raw_token, "new_password": "secondnewpass"},
+        json={
+            "email": "reuse@example.com",
+            "code": raw_code,
+            "new_password": "secondnewpass",
+        },
     )
     assert response.status_code == 400
     assert "Invalid or expired" in response.json()["detail"]
@@ -317,7 +329,11 @@ def test_password_reset_confirm_invalid_token_returns_400(
     """
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": "not-a-real-token", "new_password": "newpassword1"},
+        json={
+            "email": "ghost@example.com",
+            "code": "000000",
+            "new_password": "newpassword1",
+        },
     )
     assert response.status_code == 400
 
@@ -330,6 +346,215 @@ def test_password_reset_confirm_short_password_returns_422(
     """
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"token": "any-token", "new_password": "short"},
+        json={"email": "x@example.com", "code": "123456", "new_password": "short"},
     )
     assert response.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Profile router integration tests
+# ---------------------------------------------------------------------------
+
+
+def _register_and_login(client: TestClient, email: str = "prof@example.com") -> str:
+    """
+    Register a user and return the access token.
+
+    Args:
+        client: TestClient to send requests with.
+        email: Email address for the test account.
+
+    Returns:
+        str: JWT access token.
+    """
+    client.post("/auth/register", json={"email": email, "password": "strongpass1"})
+    resp = client.post("/auth/login", json={"email": email, "password": "strongpass1"})
+    return str(resp.json()["access_token"])
+
+
+def test_get_profile_returns_200(client: TestClient) -> None:
+    """
+    GET /profile returns the current user profile with correct fields.
+    """
+    token = _register_and_login(client, "getprofile@example.com")
+    response = client.get("/profile", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == "getprofile@example.com"
+    assert body["risk_level"] == "moderate"
+    assert body["monthly_expenses"] == 0.0
+    assert isinstance(body["id"], int)
+
+
+def test_get_profile_unauthenticated_returns_403(client: TestClient) -> None:
+    """
+    GET /profile without a token returns 403.
+    """
+    response = client.get("/profile")
+    assert response.status_code == 403
+
+
+def test_put_profile_email_success(client: TestClient) -> None:
+    """
+    PUT /profile/email with correct current password updates the email.
+    """
+    token = _register_and_login(client, "emailchange@example.com")
+    response = client.put(
+        "/profile/email",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "strongpass1", "new_email": "changed@example.com"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["email"] == "changed@example.com"
+
+
+def test_put_profile_email_wrong_password_returns_400(client: TestClient) -> None:
+    """
+    PUT /profile/email with wrong current password returns 400.
+    """
+    token = _register_and_login(client, "emailwrong@example.com")
+    response = client.put(
+        "/profile/email",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "badpassword", "new_email": "new@example.com"},
+    )
+
+    assert response.status_code == 400
+    assert "incorrect" in response.json()["detail"]
+
+
+def test_put_profile_email_duplicate_returns_400(client: TestClient) -> None:
+    """
+    PUT /profile/email with a taken email returns 400.
+    """
+    _register_and_login(client, "taken@example.com")
+    token = _register_and_login(client, "owner2@example.com")
+
+    response = client.put(
+        "/profile/email",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"current_password": "strongpass1", "new_email": "taken@example.com"},
+    )
+
+    assert response.status_code == 400
+    assert "already in use" in response.json()["detail"]
+
+
+def test_put_profile_password_success(client: TestClient) -> None:
+    """
+    PUT /profile/password succeeds and returns 204.
+    """
+    token = _register_and_login(client, "pwchange2@example.com")
+    response = client.put(
+        "/profile/password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "current_password": "strongpass1",
+            "new_password": "newpassword1",
+            "confirm_password": "newpassword1",
+        },
+    )
+
+    assert response.status_code == 204
+
+
+def test_put_profile_password_mismatch_returns_400(client: TestClient) -> None:
+    """
+    PUT /profile/password with mismatched new passwords returns 400.
+    """
+    token = _register_and_login(client, "pwmismatch2@example.com")
+    response = client.put(
+        "/profile/password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "current_password": "strongpass1",
+            "new_password": "newpassword1",
+            "confirm_password": "differentpass",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "do not match" in response.json()["detail"]
+
+
+def test_put_profile_password_wrong_current_returns_400(client: TestClient) -> None:
+    """
+    PUT /profile/password with wrong current password returns 400.
+    """
+    token = _register_and_login(client, "pwwrong2@example.com")
+    response = client.put(
+        "/profile/password",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "current_password": "wrongcurrent",
+            "new_password": "newpassword1",
+            "confirm_password": "newpassword1",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "incorrect" in response.json()["detail"]
+
+
+def test_put_profile_settings_expenses(client: TestClient) -> None:
+    """
+    PUT /profile/settings with monthly_expenses=5000 updates the profile.
+    """
+    token = _register_and_login(client, "settings2@example.com")
+    response = client.put(
+        "/profile/settings",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"monthly_expenses": 5000.0},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["profile"]["monthly_expenses"] == 5000.0
+    assert body["profile"]["risk_level"] == "moderate"
+
+
+def test_put_profile_settings_risk_level(client: TestClient) -> None:
+    """
+    PUT /profile/settings with risk_level=aggressive updates the profile.
+    """
+    token = _register_and_login(client, "risklevel2@example.com")
+    response = client.put(
+        "/profile/settings",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"risk_level": "aggressive"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["profile"]["risk_level"] == "aggressive"
+
+
+def test_put_profile_settings_invalid_risk_level_returns_422(
+    client: TestClient,
+) -> None:
+    """
+    PUT /profile/settings with an invalid risk_level value returns 422.
+    """
+    token = _register_and_login(client, "badrisk@example.com")
+    response = client.put(
+        "/profile/settings",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"risk_level": "extreme"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_put_profile_settings_no_fields_returns_400(client: TestClient) -> None:
+    """
+    PUT /profile/settings with no fields provided returns 400.
+    """
+    token = _register_and_login(client, "nofields2@example.com")
+    response = client.put(
+        "/profile/settings",
+        headers={"Authorization": f"Bearer {token}"},
+        json={},
+    )
+
+    assert response.status_code == 400
