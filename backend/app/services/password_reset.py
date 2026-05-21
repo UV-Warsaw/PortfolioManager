@@ -50,7 +50,9 @@ def request_password_reset(email: str, session: Session) -> None:
     logger.info("Password reset code issued for %s", email)
 
 
-def confirm_password_reset(email: str, raw_code: str, new_password: str, session: Session) -> None:
+def confirm_password_reset(
+    email: str, raw_code: str, new_password: str, session: Session
+) -> None:
     """
     Complete the password-reset flow by validating the 6-digit code and updating the password.
 

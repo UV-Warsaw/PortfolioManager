@@ -200,7 +200,10 @@ def test_confirm_password_reset_updates_password(db_session: Session) -> None:
     repo.create(raw_token=raw_token, email="cpw@example.com", expires_at=expires_at)
 
     confirm_password_reset(
-        email="cpw@example.com", raw_code=raw_token, new_password="newpassword1", session=db_session
+        email="cpw@example.com",
+        raw_code=raw_token,
+        new_password="newpassword1",
+        session=db_session,
     )
 
     result = login_user(
@@ -217,7 +220,8 @@ def test_confirm_password_reset_invalid_token_raises(db_session: Session) -> Non
 
     with pytest.raises(ValueError, match="Invalid or expired"):
         confirm_password_reset(
-            email="nobody@example.com", raw_code="000000",
+            email="nobody@example.com",
+            raw_code="000000",
             new_password="newpassword1",
             session=db_session,
         )
@@ -241,12 +245,18 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
     repo.create(raw_token=raw_token, email="reuse@example.com", expires_at=expires_at)
 
     confirm_password_reset(
-        email="reuse@example.com", raw_code=raw_token, new_password="firstnewpass", session=db_session
+        email="reuse@example.com",
+        raw_code=raw_token,
+        new_password="firstnewpass",
+        session=db_session,
     )
 
     with pytest.raises(ValueError, match="Invalid or expired"):
         confirm_password_reset(
-            email="reuse@example.com", raw_code=raw_token, new_password="secondnewpass", session=db_session
+            email="reuse@example.com",
+            raw_code=raw_token,
+            new_password="secondnewpass",
+            session=db_session,
         )
 
 

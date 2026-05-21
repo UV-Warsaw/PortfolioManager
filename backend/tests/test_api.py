@@ -260,7 +260,11 @@ def test_password_reset_confirm_success(client: TestClient) -> None:
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"email": "confirm@example.com", "code": raw_code, "new_password": "newpassword1"},
+        json={
+            "email": "confirm@example.com",
+            "code": raw_code,
+            "new_password": "newpassword1",
+        },
     )
     assert response.status_code == 200
     assert "Password updated" in response.json()["message"]
@@ -298,12 +302,20 @@ def test_password_reset_confirm_token_cannot_be_reused(client: TestClient) -> No
 
     client.post(
         "/auth/password-reset/confirm",
-        json={"email": "reuse@example.com", "code": raw_code, "new_password": "firstnewpass"},
+        json={
+            "email": "reuse@example.com",
+            "code": raw_code,
+            "new_password": "firstnewpass",
+        },
     )
 
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"email": "reuse@example.com", "code": raw_code, "new_password": "secondnewpass"},
+        json={
+            "email": "reuse@example.com",
+            "code": raw_code,
+            "new_password": "secondnewpass",
+        },
     )
     assert response.status_code == 400
     assert "Invalid or expired" in response.json()["detail"]
@@ -317,7 +329,11 @@ def test_password_reset_confirm_invalid_token_returns_400(
     """
     response = client.post(
         "/auth/password-reset/confirm",
-        json={"email": "ghost@example.com", "code": "000000", "new_password": "newpassword1"},
+        json={
+            "email": "ghost@example.com",
+            "code": "000000",
+            "new_password": "newpassword1",
+        },
     )
     assert response.status_code == 400
 

@@ -43,7 +43,9 @@ def get_my_profile(
     try:
         return get_profile(user_id=current_user["id"], session=session)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
 
 
 @router.put("/email", response_model=ProfileResponse)
@@ -74,7 +76,9 @@ def change_email(
             session=session,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
@@ -106,7 +110,9 @@ def change_password(
             session=session,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
 
 @router.put("/settings", response_model=UpdateSettingsResponse)
@@ -137,6 +143,8 @@ def change_settings(
             session=session,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
     return UpdateSettingsResponse(profile=profile)
