@@ -34,10 +34,10 @@ def test_get_account_values_empty_db(db_session: Session) -> None:
 
 
 def test_get_account_values_single_buy(db_session: Session) -> None:
-    """Returns correct value for a single BUY transaction."""
+    """Returns correct market value for a single BUY transaction."""
     db_session.add(
         Transaction(
-            ticker="CDR", type="BUY", quantity=10.0, amount=1000.0, account="PLN"
+            ticker="CDR", type="BUY", quantity=10.0, market_price=100.0, account="PLN"
         )
     )
     db_session.commit()
@@ -48,20 +48,36 @@ def test_get_account_values_single_buy(db_session: Session) -> None:
 
 
 def test_get_account_values_multiple_accounts(db_session: Session) -> None:
-    """Aggregates values per account independently."""
+    """Aggregates market value per account independently."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=1000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=100.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="PKN", type="BUY", quantity=5.0, amount=500.0, account="PLN"
+                ticker="PKN",
+                type="BUY",
+                quantity=5.0,
+                market_price=100.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="AAPL", type="BUY", quantity=2.0, amount=800.0, account="IKE"
+                ticker="AAPL",
+                type="BUY",
+                quantity=2.0,
+                market_price=400.0,
+                account="IKE",
             ),
             Transaction(
-                ticker="MSFT", type="BUY", quantity=1.0, amount=1200.0, account="USD"
+                ticker="MSFT",
+                type="BUY",
+                quantity=1.0,
+                market_price=1200.0,
+                account="USD",
             ),
         ]
     )
@@ -72,15 +88,23 @@ def test_get_account_values_multiple_accounts(db_session: Session) -> None:
     assert result == {"PLN": 1500.0, "IKE": 800.0, "USD": 1200.0}
 
 
-def test_get_account_values_sell_reduces_value(db_session: Session) -> None:
-    """A SELL transaction reduces the net value for the account."""
+def test_get_account_values_sell_rows_ignored(db_session: Session) -> None:
+    """SELL rows are not included in the market value calculation."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=1000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=100.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="CDR", type="SELL", quantity=4.0, amount=500.0, account="PLN"
+                ticker="CDR",
+                type="SELL",
+                quantity=4.0,
+                market_price=110.0,
+                account="PLN",
             ),
         ]
     )
@@ -88,18 +112,22 @@ def test_get_account_values_sell_reduces_value(db_session: Session) -> None:
 
     repo = TransactionRepository(db_session)
     result = repo.get_account_values()
-    assert result == {"PLN": 500.0}
+    assert result == {"PLN": 1000.0}
 
 
-def test_get_account_values_null_amount_ignored(db_session: Session) -> None:
-    """Transactions with NULL amount do not contribute to the total."""
+def test_get_account_values_null_market_price_ignored(db_session: Session) -> None:
+    """Transactions with NULL market_price do not contribute to the total."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=1000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=100.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="PKN", type="BUY", quantity=5.0, amount=None, account="PLN"
+                ticker="PKN", type="BUY", quantity=5.0, market_price=None, account="PLN"
             ),
         ]
     )
@@ -115,9 +143,13 @@ def test_get_account_values_cash_operations_excluded(db_session: Session) -> Non
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=2000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=200.0,
+                account="PLN",
             ),
-            # Cash-op rows that were incorrectly subtracted before the fix
+            # Cash-op rows that must not appear in the market value total
             Transaction(
                 ticker=None, type="Dividend", quantity=None, amount=150.0, account="PLN"
             ),
@@ -158,17 +190,29 @@ def test_get_top_holdings_empty_db(db_session: Session) -> None:
 
 
 def test_get_top_holdings_ordering(db_session: Session) -> None:
-    """Holdings are returned in descending cost-basis order."""
+    """Holdings are returned in descending market-value order."""
     db_session.add_all(
         [
             Transaction(
-                ticker="AAPL", type="BUY", quantity=1.0, amount=500.0, account="PLN"
+                ticker="AAPL",
+                type="BUY",
+                quantity=1.0,
+                market_price=500.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="CDR", type="BUY", quantity=1.0, amount=3000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=1.0,
+                market_price=3000.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="MSFT", type="BUY", quantity=1.0, amount=1500.0, account="PLN"
+                ticker="MSFT",
+                type="BUY",
+                quantity=1.0,
+                market_price=1500.0,
+                account="PLN",
             ),
         ]
     )
@@ -188,7 +232,7 @@ def test_get_top_holdings_limit(db_session: Session) -> None:
                 ticker=f"T{i}",
                 type="BUY",
                 quantity=1.0,
-                amount=float(i * 100),
+                market_price=float(i * 100),
                 account="PLN",
             )
             for i in range(1, 16)
@@ -201,18 +245,30 @@ def test_get_top_holdings_limit(db_session: Session) -> None:
     assert len(repo.get_top_holdings(limit=5)) == 5
 
 
-def test_get_top_holdings_excludes_zero_or_negative(db_session: Session) -> None:
-    """Fully-sold positions (net cost_basis <= 0) are excluded."""
+def test_get_top_holdings_sell_rows_ignored(db_session: Session) -> None:
+    """SELL rows are ignored; only BUY market value is counted per ticker."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=1000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=100.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="CDR", type="SELL", quantity=10.0, amount=1000.0, account="PLN"
+                ticker="CDR",
+                type="SELL",
+                quantity=10.0,
+                market_price=120.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="PKN", type="BUY", quantity=5.0, amount=500.0, account="PLN"
+                ticker="PKN",
+                type="BUY",
+                quantity=5.0,
+                market_price=100.0,
+                account="PLN",
             ),
         ]
     )
@@ -221,8 +277,10 @@ def test_get_top_holdings_excludes_zero_or_negative(db_session: Session) -> None
     repo = TransactionRepository(db_session)
     result = repo.get_top_holdings()
     tickers = [r[0] for r in result]
-    assert "CDR" not in tickers
+    assert "CDR" in tickers
     assert "PKN" in tickers
+    cdr_value = next(v for t, v in result if t == "CDR")
+    assert cdr_value == pytest.approx(1000.0)
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +314,11 @@ def test_portfolio_value_cash_ops_not_counted(
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=2000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=200.0,
+                account="PLN",
             ),
             Transaction(
                 ticker=None, type="Dividend", quantity=None, amount=100.0, account="PLN"
@@ -283,17 +345,29 @@ def test_portfolio_value_cash_ops_not_counted(
 def test_portfolio_value_returns_per_account_values(
     client: TestClient, db_session: Session
 ) -> None:
-    """Returns accurate per-account values after inserting transactions."""
+    """Returns accurate per-account market values after inserting transactions."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=10.0, amount=2000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=10.0,
+                market_price=200.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="AAPL", type="BUY", quantity=1.0, amount=1500.0, account="IKE"
+                ticker="AAPL",
+                type="BUY",
+                quantity=1.0,
+                market_price=1500.0,
+                account="IKE",
             ),
             Transaction(
-                ticker="MSFT", type="BUY", quantity=2.0, amount=3000.0, account="USD"
+                ticker="MSFT",
+                type="BUY",
+                quantity=2.0,
+                market_price=1500.0,
+                account="USD",
             ),
         ]
     )
@@ -315,17 +389,22 @@ def test_portfolio_value_returns_per_account_values(
 def test_portfolio_value_total_matches_account_sum(
     client: TestClient, db_session: Session
 ) -> None:
-    """Total field equals the sum of all per-account values."""
+    """Total field equals the sum of all per-account market values."""
     db_session.add_all(
         [
             Transaction(
-                ticker="CDR", type="BUY", quantity=5.0, amount=750.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=5.0,
+                market_price=110.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="CDR", type="SELL", quantity=2.0, amount=200.0, account="PLN"
-            ),
-            Transaction(
-                ticker="AAPL", type="BUY", quantity=3.0, amount=900.0, account="IKE"
+                ticker="AAPL",
+                type="BUY",
+                quantity=3.0,
+                market_price=300.0,
+                account="IKE",
             ),
         ]
     )
@@ -369,17 +448,29 @@ def test_top_holdings_empty_database(client: TestClient) -> None:
 def test_top_holdings_ordered_descending(
     client: TestClient, db_session: Session
 ) -> None:
-    """Items are returned by cost_basis descending."""
+    """Items are returned by market value descending."""
     db_session.add_all(
         [
             Transaction(
-                ticker="AAPL", type="BUY", quantity=1.0, amount=500.0, account="PLN"
+                ticker="AAPL",
+                type="BUY",
+                quantity=1.0,
+                market_price=500.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="CDR", type="BUY", quantity=1.0, amount=3000.0, account="PLN"
+                ticker="CDR",
+                type="BUY",
+                quantity=1.0,
+                market_price=3000.0,
+                account="PLN",
             ),
             Transaction(
-                ticker="MSFT", type="BUY", quantity=1.0, amount=1500.0, account="PLN"
+                ticker="MSFT",
+                type="BUY",
+                quantity=1.0,
+                market_price=1500.0,
+                account="PLN",
             ),
         ]
     )
@@ -404,7 +495,7 @@ def test_top_holdings_max_ten_items(client: TestClient, db_session: Session) -> 
                 ticker=f"T{i}",
                 type="BUY",
                 quantity=1.0,
-                amount=float(i * 100),
+                market_price=float(i * 100),
                 account="PLN",
             )
             for i in range(1, 16)

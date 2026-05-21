@@ -39,17 +39,17 @@ def get_active_holdings(
 
 
 def get_portfolio_value(session: Session) -> PortfolioValueResponse:
-    """Return net cost basis per account and aggregate total.
+    """Return current market value per account and aggregate total.
 
-    Values represent the net capital invested per account (BUY amounts minus
-    SELL amounts). All amounts are stored in PLN — USD transactions are
-    converted at import time.
+    Values represent sum(market_price * quantity) per account for open BUY
+    positions. All prices are stored in PLN — USD transactions are converted
+    at import time.
 
     Args:
         session: Database session.
 
     Returns:
-        PortfolioValueResponse with per-account values and aggregate total.
+        PortfolioValueResponse with per-account market values and aggregate total.
     """
     repo = TransactionRepository(session)
     accounts = repo.get_account_values()
@@ -58,14 +58,14 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
 
 
 def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
-    """Return the top holdings by net cost basis.
+    """Return the top holdings by current market value.
 
     Args:
         session: Database session.
         limit: Maximum number of holdings to return (default 10).
 
     Returns:
-        TopHoldingsResponse with items ordered by cost_basis descending.
+        TopHoldingsResponse with items ordered by market value descending.
     """
     repo = TransactionRepository(session)
     rows = repo.get_top_holdings(limit=limit)

@@ -147,29 +147,27 @@ class TransactionRepository(BaseRepository[Transaction]):
         ]
 
     def get_account_values(self) -> dict[str, float]:
-        """Return net cost basis per account — only BUY/SELL stock transactions.
+        """Return current market value per account — sum of market_price * quantity.
 
-        Cash-operation rows (type != BUY/SELL or ticker IS NULL) are excluded to
-        avoid dividend, deposit and transfer amounts distorting the cost basis.
+        Only open BUY positions with a non-null market_price and ticker are included.
+        Cash-operation rows (ticker IS NULL or type != BUY) are excluded.
 
-        Values are stored in PLN — USD transactions are converted during import.
+        Values are stored in PLN — USD prices are converted during import.
 
         Returns:
-            Dict mapping account name to net invested value (PLN).
+            Dict mapping account name to current market value (PLN).
         """
-        net_val = func.sum(
-            case(
-                (Transaction.type == "BUY", Transaction.amount),
-                else_=-Transaction.amount,
-            )
-        ).label("net_value")
+        market_val = func.sum(Transaction.market_price * Transaction.quantity).label(
+            "market_value"
+        )
 
         stmt = (
-            select(Transaction.account, net_val)
+            select(Transaction.account, market_val)
             .where(
-                Transaction.amount.is_not(None),
+                Transaction.market_price.is_not(None),
+                Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type.in_(["BUY", "SELL"]),
+                Transaction.type == "BUY",
             )
             .group_by(Transaction.account)
         )
@@ -181,34 +179,32 @@ class TransactionRepository(BaseRepository[Transaction]):
         }
 
     def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
-        """Return the top N holdings by net cost basis across all accounts.
+        """Return the top N holdings by current market value across all accounts.
 
-        Only BUY/SELL transactions with a non-null ticker are considered.
-        Holdings with a non-positive net cost are excluded.
+        Market value is computed as sum(market_price * quantity) for BUY rows.
+        Only positions with a non-null market_price and ticker are considered.
 
         Args:
             limit: Maximum number of holdings to return.
 
         Returns:
-            List of (ticker, cost_basis) tuples ordered by cost_basis descending.
+            List of (ticker, market_value) tuples ordered by market_value descending.
         """
-        net_val = func.sum(
-            case(
-                (Transaction.type == "BUY", Transaction.amount),
-                else_=-Transaction.amount,
-            )
-        ).label("cost_basis")
+        market_val = func.sum(Transaction.market_price * Transaction.quantity).label(
+            "market_value"
+        )
 
         stmt = (
-            select(Transaction.ticker, net_val)
+            select(Transaction.ticker, market_val)
             .where(
-                Transaction.amount.is_not(None),
+                Transaction.market_price.is_not(None),
+                Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type.in_(["BUY", "SELL"]),
+                Transaction.type == "BUY",
             )
             .group_by(Transaction.ticker)
-            .having(net_val > 0)
-            .order_by(net_val.desc())
+            .having(market_val > 0)
+            .order_by(market_val.desc())
             .limit(limit)
         )
         rows = self.session.exec(stmt).all()

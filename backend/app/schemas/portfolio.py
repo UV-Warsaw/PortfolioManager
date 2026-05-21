@@ -42,21 +42,21 @@ class HoldingRead(BaseModel):
 
 
 class PortfolioValueResponse(BaseModel):
-    """Read schema for portfolio cost basis grouped by account."""
+    """Read schema for portfolio current market value grouped by account."""
 
     accounts: dict[str, float]
     total: float
 
 
 class TopHoldingItem(BaseModel):
-    """Read schema for a single holding ranked by cost basis."""
+    """Read schema for a single holding ranked by market value."""
 
     ticker: str
     cost_basis: float
 
 
 class TopHoldingsResponse(BaseModel):
-    """Read schema for the top-N holdings by cost basis."""
+    """Read schema for the top-N holdings by market value."""
 
     items: list[TopHoldingItem]
 
