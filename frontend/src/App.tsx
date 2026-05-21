@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
 import PortfolioValueCards from './components/PortfolioValueCards'
@@ -21,6 +21,11 @@ const App: React.FC = () => {
   const [currentEmail, setCurrentEmail] = useState('')
   const [dashTab, setDashTab] = useState<DashTab>('gielda')
   const [loggingOut, setLoggingOut] = useState(false)
+  const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
+
+  const handleImportSuccess = useCallback(() => {
+    setPortfolioRefreshKey((k) => k + 1)
+  }, [])
 
   useEffect(() => {
     const check = async () => {
@@ -271,8 +276,8 @@ const App: React.FC = () => {
                 Importuj transakcje z XTB i sledz aktywne pozycje
               </p>
             </div>
-            <PortfolioValueCards token={token} />
-            <ImportForm token={token} />
+            <PortfolioValueCards token={token} refreshKey={portfolioRefreshKey} />
+            <ImportForm token={token} onImportSuccess={handleImportSuccess} />
           </div>
         ) : null}
       </main>
