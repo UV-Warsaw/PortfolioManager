@@ -1,4 +1,4 @@
-"""Schemas for portfolio import operations."""
+"""Schemas for portfolio import and holdings operations."""
 
 from datetime import datetime
 
@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 
 class TransactionRead(BaseModel):
+    """Read schema for a single transaction record."""
+
     id: int
     date: datetime | None
     ticker: str | None
@@ -19,6 +21,8 @@ class TransactionRead(BaseModel):
 
 
 class DividendRead(BaseModel):
+    """Read schema for a single dividend record."""
+
     id: int
     date: datetime | None
     ticker: str | None
@@ -29,7 +33,19 @@ class DividendRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class HoldingRead(BaseModel):
+    """Read schema for an aggregated current holding position."""
+
+    ticker: str
+    account: str
+    quantity: float
+
+
 class ImportResponse(BaseModel):
+    """Response schema for the portfolio upload endpoint."""
+
     imported_transactions: int
     imported_dividends: int
+    skipped_transactions: int = 0
+    skipped_dividends: int = 0
     account: str
