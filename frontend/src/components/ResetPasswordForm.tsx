@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import { ApiError, confirmPasswordReset } from '../services/authApi'
 
 interface Props {
+  email: string
   token: string
   onSuccess: () => void
 }
 
-const ResetPasswordForm: React.FC<Props> = ({ token, onSuccess }) => {
+const ResetPasswordForm: React.FC<Props> = ({ email, token, onSuccess }) => {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +29,7 @@ const ResetPasswordForm: React.FC<Props> = ({ token, onSuccess }) => {
 
     setLoading(true)
     try {
-      await confirmPasswordReset(token, password)
+      await confirmPasswordReset(email, token, password)
       onSuccess()
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
