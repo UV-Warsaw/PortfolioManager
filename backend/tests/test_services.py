@@ -185,7 +185,6 @@ def test_confirm_password_reset_updates_password(db_session: Session) -> None:
     """
     confirm_password_reset changes the user's password and marks token used.
     """
-    import secrets
     from datetime import UTC, datetime, timedelta
 
     from app.repositories.password_reset import PasswordResetTokenRepository
@@ -231,7 +230,6 @@ def test_confirm_password_reset_token_cannot_be_reused(db_session: Session) -> N
     """
     confirm_password_reset marks the token as used; a second attempt raises ValueError.
     """
-    import secrets
     from datetime import UTC, datetime, timedelta
 
     from app.repositories.password_reset import PasswordResetTokenRepository

@@ -1,6 +1,5 @@
 """Repository for user data access."""
 
-from datetime import UTC, datetime
 
 from sqlmodel import Session, select
 

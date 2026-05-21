@@ -1,6 +1,5 @@
 """Repository tests for UserRepository profile update methods."""
 
-import pytest
 from sqlmodel import Session
 
 from app.repositories.user import UserRepository
