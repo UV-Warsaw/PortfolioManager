@@ -305,3 +305,53 @@ class DividendRepository(BaseRepository[Dividend]):
         for div in created:
             self.session.refresh(div)
         return created, skipped
+
+    def get_yearly_summary(self, account: str | None = None) -> list[dict]:
+        """Get dividend summary grouped by year.
+
+        Args:
+            account: Optional account filter (IKE, PLN, USD).
+
+        Returns:
+            List of dicts with 'year' and 'total' keys.
+        """
+        stmt = select(
+            func.strftime("%Y", Dividend.date).label("year"),
+            func.coalesce(func.sum(Dividend.amount), 0).label("total"),
+        ).group_by("year").order_by("year")
+
+        if account:
+            stmt = stmt.where(Dividend.account == account)
+
+        results = self.session.exec(stmt).all()
+        return [{"year": r[0], "total": float(r[1])} for r in results]
+
+    def get_monthly_timeline(
+        self, year: int | None = None, account: str | None = None
+    ) -> list[dict]:
+        """Get dividend timeline by month.
+
+        Args:
+            year: Optional year filter — returns 12 months for that year.
+            account: Optional account filter (IKE, PLN, USD).
+
+        Returns:
+            List of dicts with 'month', 'total', and optionally 'year' keys.
+        """
+        if year:
+            stmt = select(
+                func.strftime("%m", Dividend.date).label("month"),
+                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
+            ).where(func.strftime("%Y", Dividend.date) == str(year)).group_by("month")
+        else:
+            stmt = select(
+                func.strftime("%Y-%m", Dividend.date).label("month"),
+                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
+            ).group_by("month")
+
+        if account:
+            stmt = stmt.where(Dividend.account == account)
+
+        stmt = stmt.order_by("month")
+        results = self.session.exec(stmt).all()
+        return [{"month": r[0], "total": float(r[1])} for r in results]
