@@ -1,28 +1,30 @@
 """FastAPI router for Bond endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.database import get_db
 from app.schemas.bonds import BondCreate, BondResponse, BondUpdate
 from app.services.bonds import BondService
-from app.core.config import get_current_user
+from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/portfolio/bonds", tags=["bonds"])
+_bearer = HTTPBearer()
 
 
 @router.post("", response_model=BondResponse, status_code=201)
 def create_bond(
     bond_data: BondCreate,
     session: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> BondResponse:
     """Create a new bond.
 
     Args:
         bond_data: The bond data to create.
         session: Database session.
-        current_user: Current authenticated user.
+        credentials: Bearer token credentials.
 
     Returns:
         The created bond.
@@ -30,6 +32,7 @@ def create_bond(
     Raises:
         400: If a bond with the same name already exists.
     """
+    get_current_user(credentials, session)
     try:
         service = BondService(session)
         return service.create_bond(bond_data)
@@ -40,17 +43,18 @@ def create_bond(
 @router.get("", response_model=list[BondResponse])
 def list_bonds(
     session: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> list[BondResponse]:
     """Get all bonds.
 
     Args:
         session: Database session.
-        current_user: Current authenticated user.
+        credentials: Bearer token credentials.
 
     Returns:
         List of all bonds.
     """
+    get_current_user(credentials, session)
     service = BondService(session)
     return service.list_bonds()
 
@@ -59,14 +63,14 @@ def list_bonds(
 def get_bond(
     bond_id: int,
     session: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> BondResponse:
     """Get a single bond by ID.
 
     Args:
         bond_id: The bond ID.
         session: Database session.
-        current_user: Current authenticated user.
+        credentials: Bearer token credentials.
 
     Returns:
         The bond.
@@ -74,6 +78,7 @@ def get_bond(
     Raises:
         404: If bond not found.
     """
+    get_current_user(credentials, session)
     service = BondService(session)
     bond = service.get_bond(bond_id)
     if not bond:
@@ -86,7 +91,7 @@ def update_bond(
     bond_id: int,
     bond_data: BondUpdate,
     session: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> BondResponse:
     """Update an existing bond.
 
@@ -94,7 +99,7 @@ def update_bond(
         bond_id: The bond ID to update.
         bond_data: The updated bond data.
         session: Database session.
-        current_user: Current authenticated user.
+        credentials: Bearer token credentials.
 
     Returns:
         The updated bond.
@@ -103,6 +108,7 @@ def update_bond(
         404: If bond not found.
         400: If updating to a duplicate name.
     """
+    get_current_user(credentials, session)
     try:
         service = BondService(session)
         bond = service.update_bond(bond_id, bond_data)
@@ -117,18 +123,19 @@ def update_bond(
 def delete_bond(
     bond_id: int,
     session: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> None:
     """Delete a bond by ID.
 
     Args:
         bond_id: The bond ID to delete.
         session: Database session.
-        current_user: Current authenticated user.
+        credentials: Bearer token credentials.
 
     Raises:
         404: If bond not found.
     """
+    get_current_user(credentials, session)
     service = BondService(session)
     if not service.delete_bond(bond_id):
         raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
