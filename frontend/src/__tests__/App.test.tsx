@@ -15,12 +15,6 @@ vi.mock('../components/ForgotPasswordForm', () => ({
 vi.mock('../components/ImportForm', () => ({
   default: () => React.createElement('div', { 'data-testid': 'import-form' }),
 }))
-vi.mock('../components/PortfolioValueCards', () => ({
-  default: () => React.createElement('div', { 'data-testid': 'portfolio-value-cards' }),
-}))
-vi.mock('../components/TopHoldingsChart', () => ({
-  default: () => React.createElement('div', { 'data-testid': 'top-holdings-chart' }),
-}))
 vi.mock('../components/ProfileForm', () => ({
   default: () => React.createElement('div', { 'data-testid': 'profile-form' }),
 }))
