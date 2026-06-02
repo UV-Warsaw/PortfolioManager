@@ -444,7 +444,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
                         color: 'var(--text-tertiary)',
                       }}
                     >
-                      {bond.quantity}x @ {bond.purchase_price.toFixed(2)} PLN
+                      {bond.quantity}x @ {bond.principal.toFixed(2)} PLN
                     </div>
                   </div>
                 ))}
@@ -484,7 +484,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
                         {selectedBond.name}
                       </h3>
                       <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-                        {selectedBond.interest_rate}% annual rate, {selectedBond.capitalization}
+                        {selectedBond.annual_rate}% annual rate, {selectedBond.capitalization}
                       </p>
                     </div>
                     <div style={{ display: 'flex', gap: '8px' }}>

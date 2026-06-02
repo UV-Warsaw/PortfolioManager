@@ -51,11 +51,11 @@ export interface CashUpdate {
 export interface Bond {
   id: number
   name: string
-  interest_rate: number
-  interest_period_years: number
-  capitalization: 'ANNUAL' | 'MONTHLY'
-  purchase_price: number
-  current_price: number | null
+  annual_rate: number
+  years: number
+  capitalization: 'Annual' | 'Monthly'
+  principal: number
+  redemption_price: number | null
   quantity: number
   purchase_date: string
   created_at: string
@@ -64,22 +64,22 @@ export interface Bond {
 
 export interface BondCreate {
   name: string
-  interest_rate: number
-  interest_period_years: number
-  capitalization: 'ANNUAL' | 'MONTHLY'
-  purchase_price: number
-  current_price?: number | null
+  annual_rate: number
+  years: number
+  capitalization: 'Annual' | 'Monthly'
+  principal: number
+  redemption_price?: number | null
   quantity?: number
   purchase_date: string
 }
 
 export interface BondUpdate {
   name?: string
-  interest_rate?: number
-  interest_period_years?: number
-  capitalization?: 'ANNUAL' | 'MONTHLY'
-  purchase_price?: number
-  current_price?: number | null
+  annual_rate?: number
+  years?: number
+  capitalization?: 'Annual' | 'Monthly'
+  principal?: number
+  redemption_price?: number | null
   quantity?: number
   purchase_date?: string
 }
