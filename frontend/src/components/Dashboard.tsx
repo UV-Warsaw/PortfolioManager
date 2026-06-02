@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react'
 import {
   getDashboardSummary,
   getDividendYearlySummary,
-  getDividendTimeline,
   type PortfolioSummaryResponse,
   type DividendSummaryResponse,
-  type DividendTimelineResponse,
 } from '../services/portfolioApi'
 
 interface Props {
@@ -29,13 +27,6 @@ interface DashboardStat {
 }
 
 function DashboardCard({ stat }: { stat: DashboardStat }) {
-  const bgColor =
-    stat.color === 'positive'
-      ? 'rgba(34, 197, 94, 0.1)'
-      : stat.color === 'negative'
-        ? 'rgba(239, 68, 68, 0.1)'
-        : 'transparent'
-
   const textColor =
     stat.color === 'positive'
       ? '#22c55e'
@@ -285,7 +276,6 @@ function DividendBarChart({ yearly, token }: { yearly: DividendSummaryResponse[]
 export default function Dashboard({ token, refreshKey = 0 }: Props) {
   const [summary, setSummary] = useState<PortfolioSummaryResponse | null>(null)
   const [dividendYearly, setDividendYearly] = useState<DividendSummaryResponse[]>([])
-  const [dividendTimeline, setDividendTimeline] = useState<DividendTimelineResponse[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -295,13 +285,11 @@ export default function Dashboard({ token, refreshKey = 0 }: Props) {
     Promise.all([
       getDashboardSummary(token),
       getDividendYearlySummary(token),
-      getDividendTimeline(token),
     ])
-      .then(([sum, yearly, timeline]) => {
+      .then(([sum, yearly]) => {
         if (!cancelled) {
           setSummary(sum)
           setDividendYearly(yearly)
-          setDividendTimeline(timeline)
           setLoading(false)
         }
       })

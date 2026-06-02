@@ -121,7 +121,8 @@ class TestDashboardEndpoints:
     def test_get_dashboard_unauthorized(self, client) -> None:
         """GET /summary/dashboard requires auth."""
         response = client.get("/summary/dashboard")
-        assert response.status_code == 403
+        # HTTPBearer returns 401 or 403 depending on version
+        assert response.status_code in (401, 403)
 
     def test_get_dashboard_empty(self, client) -> None:
         """GET /summary/dashboard returns zeros when no holdings."""
