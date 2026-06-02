@@ -9,6 +9,14 @@ from app.repositories.base import BaseRepository
 class BondRepository(BaseRepository[Bond]):
     """Repository for managing Bond database operations."""
 
+    def __init__(self, session: Session) -> None:
+        """Initialize bond repository with session.
+        
+        Args:
+            session: Active database session.
+        """
+        super().__init__(Bond, session)
+
     def get_by_name(self, name: str) -> Bond | None:
         """Get a bond by its name.
 
