@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.bonds import CapitalizationType
 
@@ -35,6 +35,8 @@ class BondUpdate(BaseModel):
 
 class BondResponse(BaseModel):
     """Response schema for a single bond."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str

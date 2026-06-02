@@ -48,7 +48,7 @@ class BondService:
             purchase_date=data.purchase_date,
         )
         self.repo.create(bond)
-        return BondResponse.from_attributes(bond)
+        return BondResponse.model_validate(bond)
 
     def get_bond(self, bond_id: int) -> BondResponse | None:
         """Get a single bond by ID.
@@ -60,7 +60,7 @@ class BondService:
             The bond as BondResponse, or None if not found.
         """
         bond = self.repo.get_by_id_for_user(bond_id)
-        return BondResponse.from_attributes(bond) if bond else None
+        return BondResponse.model_validate(bond) if bond else None
 
     def list_bonds(self) -> list[BondResponse]:
         """Get all bonds.
@@ -69,7 +69,7 @@ class BondService:
             List of all bonds as BondResponse objects.
         """
         bonds = self.repo.list_all()
-        return [BondResponse.from_attributes(b) for b in bonds]
+        return [BondResponse.model_validate(b) for b in bonds]
 
     def update_bond(self, bond_id: int, data: BondUpdate) -> BondResponse | None:
         """Update an existing bond.
@@ -114,7 +114,7 @@ class BondService:
 
         bond.updated_at = datetime.now()
         self.repo.update(bond)
-        return BondResponse.from_attributes(bond)
+        return BondResponse.model_validate(bond)
 
     def delete_bond(self, bond_id: int) -> bool:
         """Delete a bond by ID.
