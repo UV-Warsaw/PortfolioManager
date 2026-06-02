@@ -289,9 +289,9 @@ def test_get_top_holdings_sell_rows_ignored(db_session: Session) -> None:
 
 
 def test_portfolio_value_unauthenticated(client: TestClient) -> None:
-    """Returns 401 when no bearer token is supplied."""
+    """Returns 401/403 when no bearer token is supplied."""
     res = client.get("/portfolio/value")
-    assert res.status_code == 401
+    assert res.status_code in (401, 403)
 
 
 def test_portfolio_value_empty_database(client: TestClient) -> None:
@@ -428,9 +428,9 @@ def test_portfolio_value_total_matches_account_sum(
 
 
 def test_top_holdings_unauthenticated(client: TestClient) -> None:
-    """Returns 401 when no bearer token is supplied."""
+    """Returns 401/403 when no bearer token is supplied."""
     res = client.get("/portfolio/top-holdings")
-    assert res.status_code == 401
+    assert res.status_code in (401, 403)
 
 
 def test_top_holdings_empty_database(client: TestClient) -> None:

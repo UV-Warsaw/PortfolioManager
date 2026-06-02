@@ -2,7 +2,8 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.database import get_db
@@ -13,7 +14,6 @@ from app.schemas.portfolio import (
 )
 from app.services.auth import get_current_user
 from app.services.summary import SummaryService
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 logger = logging.getLogger("portfolio_backend.routers.summary")
 
@@ -49,9 +49,7 @@ def get_dashboard(
 
     _current_user: User = get_current_user(credentials, session)
     service = SummaryService(session)
-    return PortfolioSummaryResponse(
-        **service.get_portfolio_summary(account=account)
-    )
+    return PortfolioSummaryResponse(**service.get_portfolio_summary(account=account))
 
 
 @router.get("/dividends/yearly", response_model=list[DividendSummaryResponse])

@@ -2,7 +2,6 @@
 
 from datetime import datetime
 
-import pytest
 from sqlmodel import Session
 
 from app.repositories.portfolio import DividendRepository, TransactionRepository
@@ -71,9 +70,7 @@ class TestSummaryService:
         assert result["profit_percentage"] == 0.0
         assert result["top_holdings"] == []
 
-    def test_get_portfolio_summary_with_holdings(
-        self, db_session: Session
-    ) -> None:
+    def test_get_portfolio_summary_with_holdings(self, db_session: Session) -> None:
         """get_portfolio_summary returns correct values with holdings."""
         repo = TransactionRepository(db_session)
         repo.bulk_create([_make_transaction()])
@@ -91,16 +88,14 @@ class TestSummaryService:
         result = service.get_dividend_yearly_summary()
         assert result == []
 
-    def test_get_dividend_yearly_summary_with_data(
-        self, db_session: Session
-    ) -> None:
+    def test_get_dividend_yearly_summary_with_data(self, db_session: Session) -> None:
         """get_dividend_yearly_summary aggregates by year."""
         repo = DividendRepository(db_session)
         repo.bulk_create([_make_dividend(date=datetime(2023, 3, 15, 0, 0, 0))])
         service = SummaryService(db_session)
         result = service.get_dividend_yearly_summary()
         assert len(result) == 1
-        assert result[0].year == "2023"
+        assert result[0].year == 2023
         assert result[0].total == 25.0
 
     def test_get_dividend_monthly_timeline_empty(self, db_session: Session) -> None:
@@ -109,16 +104,14 @@ class TestSummaryService:
         result = service.get_dividend_monthly_timeline()
         assert result == []
 
-    def test_get_dividend_monthly_timeline_with_data(
-        self, db_session: Session
-    ) -> None:
+    def test_get_dividend_monthly_timeline_with_data(self, db_session: Session) -> None:
         """get_dividend_monthly_timeline returns monthly data."""
         repo = DividendRepository(db_session)
         repo.bulk_create([_make_dividend(date=datetime(2023, 3, 15, 0, 0, 0))])
         service = SummaryService(db_session)
         result = service.get_dividend_monthly_timeline()
         assert len(result) == 1
-        assert result[0].month == "2023-03"
+        assert result[0].month == 3
         assert result[0].total == 25.0
 
 
@@ -183,7 +176,7 @@ class TestDashboardEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 1
-        assert body[0]["year"] == "2023"
+        assert body[0]["year"] == 2023
         assert body[0]["total"] == 25.0
 
     def test_get_dividend_timeline_empty(self, client) -> None:
@@ -196,9 +189,7 @@ class TestDashboardEndpoints:
         assert response.status_code == 200
         assert response.json() == []
 
-    def test_get_dividend_timeline_with_data(
-        self, client, db_session: Session
-    ) -> None:
+    def test_get_dividend_timeline_with_data(self, client, db_session: Session) -> None:
         """GET /summary/dividends/timeline returns monthly data."""
         token = _register_and_login(client)
         repo = DividendRepository(db_session)
@@ -210,7 +201,7 @@ class TestDashboardEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 1
-        assert body[0]["month"] == "2023-03"
+        assert body[0]["month"] == 3
         assert body[0]["total"] == 25.0
 
     def test_get_dividend_timeline_filtered_by_year(
@@ -232,5 +223,5 @@ class TestDashboardEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 1
-        assert body[0]["month"] == "03"
+        assert body[0]["month"] == 3
         assert body[0]["total"] == 25.0

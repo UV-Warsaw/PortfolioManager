@@ -1,11 +1,10 @@
 """Summary service — business logic for portfolio dashboard."""
 
 import logging
-from datetime import datetime
 
 from sqlmodel import Session, func, select
 
-from app.models.portfolio import Dividend, Transaction
+from app.models.portfolio import Transaction
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
     DividendSummaryResponse,
@@ -81,8 +80,7 @@ class SummaryService:
         """
         summaries = self.div_repo.get_yearly_summary(account=account)
         return [
-            DividendSummaryResponse(year=s["year"], total=s["total"])
-            for s in summaries
+            DividendSummaryResponse(year=s["year"], total=s["total"]) for s in summaries
         ]
 
     def get_dividend_monthly_timeline(

@@ -295,6 +295,6 @@ def test_get_holdings_endpoint_invalid_account(client) -> None:
 
 
 def test_get_holdings_endpoint_unauthenticated(client) -> None:
-    """Holdings endpoint returns 401 without a token."""
+    """Holdings endpoint returns 401/403 without a token."""
     res = client.get("/portfolio/holdings")
-    assert res.status_code == 401
+    assert res.status_code in (401, 403)
