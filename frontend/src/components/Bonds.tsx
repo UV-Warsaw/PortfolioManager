@@ -229,14 +229,11 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
             style={{
               fontSize: '28px',
               fontWeight: 'bold',
-              background: 'linear-gradient(to right, #818cf8, #a78bfa)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: '#ffffff',
               marginBottom: '8px',
             }}
           >
-            Bonds Portfolio
+            Bonds
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
             Manage your bonds and track their growth

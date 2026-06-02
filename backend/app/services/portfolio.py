@@ -54,7 +54,25 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
     repo = TransactionRepository(session)
     accounts = repo.get_account_values()
     total = round(sum(accounts.values()), 2)
-    return PortfolioValueResponse(accounts=accounts, total=total)
+    
+    # Also calculate cost basis and profit %
+    cost_basis = repo.get_cost_basis()
+    profit_data = {}
+    for account, market_value in accounts.items():
+        cost = cost_basis.get(account, 0)
+        profit = round(market_value - cost, 2)
+        profit_pct = round((profit / cost * 100) if cost > 0 else 0, 2)
+        profit_data[account] = {
+            "market_value": market_value,
+            "cost_basis": cost,
+            "profit": profit,
+            "profit_percentage": profit_pct,
+        }
+    
+    # For backward compatibility, return simple accounts dict, but add profit data
+    response = PortfolioValueResponse(accounts=accounts, total=total)
+    response.profit_data = profit_data  # type: ignore
+    return response
 
 
 def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:

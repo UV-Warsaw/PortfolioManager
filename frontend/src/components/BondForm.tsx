@@ -109,20 +109,57 @@ export const BondForm: React.FC<BondFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-4">
-      <h2 className="text-2xl font-bold mb-6">
+    <form
+      onSubmit={handleSubmit}
+      style={{
+        background: 'var(--glass-bg)',
+        border: '1px solid var(--glass-border)',
+        borderRadius: '12px',
+        padding: '24px',
+      }}
+    >
+      <h2
+        style={{
+          fontSize: '20px',
+          fontWeight: 'bold',
+          marginBottom: '16px',
+          color: '#ffffff',
+        }}
+      >
         {bond ? 'Edit Bond' : 'Add New Bond'}
       </h2>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
+      {error && <div style={{
+        background: 'rgba(248, 113, 113, 0.12)',
+        color: '#f87171',
+        borderRadius: '12px',
+        padding: '12px 16px',
+        marginBottom: '16px',
+        border: '1px solid rgba(248, 113, 113, 0.3)',
+      }}>
+        {error}
+      </div>}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '16px',
+          marginBottom: '20px',
+        }}
+      >
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Bond Name *
           </label>
           <input
@@ -130,7 +167,15 @@ export const BondForm: React.FC<BondFormProps> = ({
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="e.g., Polish Government 5Y Bond"
             disabled={submitting || isLoading}
             required
@@ -138,7 +183,17 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Interest Rate (%) *
           </label>
           <input
@@ -149,7 +204,15 @@ export const BondForm: React.FC<BondFormProps> = ({
             step="0.01"
             min="0"
             max="100"
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="5.50"
             disabled={submitting || isLoading}
             required
@@ -157,7 +220,17 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Interest Period (Years) *
           </label>
           <input
@@ -167,7 +240,15 @@ export const BondForm: React.FC<BondFormProps> = ({
             onChange={handleChange}
             step="0.1"
             min="0.1"
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="5"
             disabled={submitting || isLoading}
             required
@@ -175,14 +256,32 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Capitalization *
           </label>
           <select
             name="capitalization"
             value={formData.capitalization}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             disabled={submitting || isLoading}
             required
           >
@@ -192,7 +291,17 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Purchase Price (PLN) *
           </label>
           <input
@@ -202,7 +311,15 @@ export const BondForm: React.FC<BondFormProps> = ({
             onChange={handleChange}
             step="0.01"
             min="0.01"
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="1000.00"
             disabled={submitting || isLoading}
             required
@@ -210,7 +327,17 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Current Price (PLN)
           </label>
           <input
@@ -220,14 +347,32 @@ export const BondForm: React.FC<BondFormProps> = ({
             onChange={handleChange}
             step="0.01"
             min="0.01"
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="1000.00"
             disabled={submitting || isLoading}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Quantity *
           </label>
           <input
@@ -236,7 +381,15 @@ export const BondForm: React.FC<BondFormProps> = ({
             value={formData.quantity}
             onChange={handleChange}
             min="1"
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             placeholder="1"
             disabled={submitting || isLoading}
             required
@@ -244,7 +397,17 @@ export const BondForm: React.FC<BondFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: '600',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginBottom: '6px',
+            }}
+          >
             Purchase Date *
           </label>
           <input
@@ -252,18 +415,36 @@ export const BondForm: React.FC<BondFormProps> = ({
             name="purchase_date"
             value={formData.purchase_date}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(0, 0, 0, 0.2)',
+              color: 'var(--text-primary)',
+              fontSize: '13px',
+            }}
             disabled={submitting || isLoading}
             required
           />
         </div>
       </div>
 
-      <div className="flex gap-4 pt-6">
+      <div style={{ display: 'flex', gap: '12px' }}>
         <button
           type="submit"
           disabled={submitting || isLoading}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '6px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            background: 'rgba(99, 102, 241, 0.15)',
+            color: '#6366f1',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: submitting || isLoading ? 'not-allowed' : 'pointer',
+            opacity: submitting || isLoading ? 0.5 : 1,
+          }}
         >
           {submitting || isLoading ? 'Saving...' : bond ? 'Update Bond' : 'Create Bond'}
         </button>
@@ -271,7 +452,17 @@ export const BondForm: React.FC<BondFormProps> = ({
           type="button"
           onClick={onCancel}
           disabled={submitting || isLoading}
-          className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          style={{
+            padding: '10px 16px',
+            borderRadius: '6px',
+            border: '1px solid rgba(148, 163, 184, 0.3)',
+            background: 'transparent',
+            color: 'var(--text-secondary)',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: submitting || isLoading ? 'not-allowed' : 'pointer',
+            opacity: submitting || isLoading ? 0.5 : 1,
+          }}
         >
           Cancel
         </button>
