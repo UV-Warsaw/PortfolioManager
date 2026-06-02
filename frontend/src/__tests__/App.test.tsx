@@ -58,14 +58,14 @@ describe('App', () => {
   })
 
   describe('authenticated', () => {
-    it('renders the app shell with Gielda tab after token is validated', async () => {
+    it('renders the app shell with Trading tab after token is validated', async () => {
       vi.mocked(getMe).mockResolvedValueOnce({ id: 1, email: 'trader@example.com' })
       localStorage.setItem('access_token', 'valid-token')
 
       render(<App />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Gielda/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Trading/i })).toBeInTheDocument()
       })
       expect(screen.getByTestId('import-form')).toBeInTheDocument()
     })
@@ -81,17 +81,17 @@ describe('App', () => {
       })
     })
 
-    it('renders Krypto tab as disabled', async () => {
+    it('renders Crypto tab as disabled', async () => {
       vi.mocked(getMe).mockResolvedValueOnce({ id: 1, email: 'trader@example.com' })
       localStorage.setItem('access_token', 'valid-token')
 
       render(<App />)
 
       await waitFor(() => {
-        expect(screen.getByText('Krypto')).toBeInTheDocument()
+        expect(screen.getByText('Crypto')).toBeInTheDocument()
       })
-      const kryptoBtn = screen.getByText('Krypto').closest('button')
-      expect(kryptoBtn).toBeDisabled()
+      const cryptoBtn = screen.getByText('Crypto').closest('button')
+      expect(cryptoBtn).toBeDisabled()
     })
 
     it('falls back to login and clears token when getMe returns an error', async () => {
