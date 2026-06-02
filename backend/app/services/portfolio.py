@@ -4,7 +4,7 @@ import logging
 
 from sqlmodel import Session
 
-from app.repositories.portfolio import TransactionRepository, DividendRepository
+from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
     HoldingRead,
     PortfolioValueResponse,
@@ -76,9 +76,7 @@ def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
     return TopHoldingsResponse(items=items)
 
 
-def get_dividend_summary(
-    session: Session, account: str | None = None
-) -> list[dict]:
+def get_dividend_summary(session: Session, account: str | None = None) -> list[dict]:
     """Get dividend summary grouped by year.
 
     Args:

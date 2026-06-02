@@ -315,10 +315,14 @@ class DividendRepository(BaseRepository[Dividend]):
         Returns:
             List of dicts with 'year' and 'total' keys.
         """
-        stmt = select(
-            func.strftime("%Y", Dividend.date).label("year"),
-            func.coalesce(func.sum(Dividend.amount), 0).label("total"),
-        ).group_by("year").order_by("year")
+        stmt = (
+            select(
+                func.strftime("%Y", Dividend.date).label("year"),
+                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
+            )
+            .group_by("year")
+            .order_by("year")
+        )
 
         if account:
             stmt = stmt.where(Dividend.account == account)
@@ -339,10 +343,14 @@ class DividendRepository(BaseRepository[Dividend]):
             List of dicts with 'month', 'total', and optionally 'year' keys.
         """
         if year:
-            stmt = select(
-                func.strftime("%m", Dividend.date).label("month"),
-                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
-            ).where(func.strftime("%Y", Dividend.date) == str(year)).group_by("month")
+            stmt = (
+                select(
+                    func.strftime("%m", Dividend.date).label("month"),
+                    func.coalesce(func.sum(Dividend.amount), 0).label("total"),
+                )
+                .where(func.strftime("%Y", Dividend.date) == str(year))
+                .group_by("month")
+            )
         else:
             stmt = select(
                 func.strftime("%Y-%m", Dividend.date).label("month"),

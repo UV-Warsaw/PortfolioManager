@@ -2,7 +2,6 @@
 
 from datetime import datetime
 
-import pytest
 from sqlmodel import Session
 
 from app.repositories.portfolio import DividendRepository
@@ -73,9 +72,7 @@ class TestDividendRepository:
         assert result[1]["year"] == "2023"
         assert result[1]["total"] == 25.0
 
-    def test_get_yearly_summary_filtered_by_account(
-        self, db_session: Session
-    ) -> None:
+    def test_get_yearly_summary_filtered_by_account(self, db_session: Session) -> None:
         """get_yearly_summary filters by account when provided."""
         repo = DividendRepository(db_session)
         repo.bulk_create(
@@ -113,9 +110,7 @@ class TestDividendRepository:
         assert result[0]["month"] == "2022-01"
         assert result[0]["total"] == 10.0
 
-    def test_get_monthly_timeline_filtered_by_year(
-        self, db_session: Session
-    ) -> None:
+    def test_get_monthly_timeline_filtered_by_year(self, db_session: Session) -> None:
         """get_monthly_timeline returns 12-month view when year is specified."""
         repo = DividendRepository(db_session)
         repo.bulk_create(
@@ -160,9 +155,7 @@ class TestDividendService:
         result = get_dividend_summary(db_session)
         assert result == []
 
-    def test_get_dividend_summary_aggregates_by_year(
-        self, db_session: Session
-    ) -> None:
+    def test_get_dividend_summary_aggregates_by_year(self, db_session: Session) -> None:
         """get_dividend_summary calls repo method correctly."""
         repo = DividendRepository(db_session)
         repo.bulk_create(
@@ -321,4 +314,5 @@ class TestDividendEndpoints:
     def test_get_dividends_timeline_unauthorized(self, client) -> None:
         """GET /portfolio/dividends/timeline requires auth."""
         response = client.get("/portfolio/dividends/timeline")
-        assert response.status_code == 403
+        # HTTPBearer returns 401 or 403 depending on version
+        assert response.status_code in (401, 403)
