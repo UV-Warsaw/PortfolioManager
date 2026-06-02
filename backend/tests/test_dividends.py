@@ -52,7 +52,7 @@ class TestDividendRepository:
         repo.bulk_create([_make_dividend(date=datetime(2023, 3, 15, 0, 0, 0))])
         result = repo.get_yearly_summary()
         assert len(result) == 1
-        assert result[0]["year"] == "2023"
+        assert result[0]["year"] == 2023
         assert result[0]["total"] == 25.0
 
     def test_get_yearly_summary_multiple_years(self, db_session: Session) -> None:
@@ -67,9 +67,9 @@ class TestDividendRepository:
         )
         result = repo.get_yearly_summary()
         assert len(result) == 2
-        assert result[0]["year"] == "2022"
+        assert result[0]["year"] == 2022
         assert result[0]["total"] == 25.0
-        assert result[1]["year"] == "2023"
+        assert result[1]["year"] == 2023
         assert result[1]["total"] == 25.0
 
     def test_get_yearly_summary_filtered_by_account(self, db_session: Session) -> None:
@@ -107,7 +107,7 @@ class TestDividendRepository:
         )
         result = repo.get_monthly_timeline()
         assert len(result) == 3
-        assert result[0]["month"] == "2022-01"
+        assert result[0]["month"] == 1
         assert result[0]["total"] == 10.0
 
     def test_get_monthly_timeline_filtered_by_year(self, db_session: Session) -> None:
@@ -122,9 +122,9 @@ class TestDividendRepository:
         )
         result = repo.get_monthly_timeline(year=2023)
         assert len(result) == 2
-        assert result[0]["month"] == "03"
+        assert result[0]["month"] == 3
         assert result[0]["total"] == 15.0
-        assert result[1]["month"] == "06"
+        assert result[1]["month"] == 6
         assert result[1]["total"] == 25.0
 
     def test_get_monthly_timeline_filtered_by_account(
@@ -166,7 +166,7 @@ class TestDividendService:
         )
         result = get_dividend_summary(db_session)
         assert len(result) == 1
-        assert result[0]["year"] == "2023"
+        assert result[0]["year"] == 2023
         assert result[0]["total"] == 25.0
 
     def test_get_dividend_timeline_empty(self, db_session: Session) -> None:
@@ -186,7 +186,7 @@ class TestDividendService:
         )
         result = get_dividend_timeline(db_session, year=2023)
         assert len(result) == 2
-        assert result[0]["month"] == "03"
+        assert result[0]["month"] == 3
 
 
 class TestDividendEndpoints:
@@ -219,7 +219,7 @@ class TestDividendEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 1
-        assert body[0]["year"] == "2023"
+        assert body[0]["year"] == 2023
         assert body[0]["total"] == 25.0
 
     def test_get_dividends_summary_filtered_by_account(
@@ -286,7 +286,7 @@ class TestDividendEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 2
-        assert body[0]["month"] == "2023-01"
+        assert body[0]["month"] == 1
         assert body[0]["total"] == 10.0
 
     def test_get_dividends_timeline_filtered_by_year(
@@ -308,7 +308,7 @@ class TestDividendEndpoints:
         assert response.status_code == 200
         body = response.json()
         assert len(body) == 1
-        assert body[0]["month"] == "03"
+        assert body[0]["month"] == 3
         assert body[0]["total"] == 15.0
 
     def test_get_dividends_timeline_unauthorized(self, client) -> None:
