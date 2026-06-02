@@ -65,7 +65,7 @@ export async function getDashboardSummary(
 }
 
 export interface DividendSummaryResponse {
-  year: string
+  year: number
   total: number
 }
 
@@ -87,7 +87,7 @@ export async function getDividendYearlySummary(
 }
 
 export interface DividendTimelineResponse {
-  month: string
+  month: number
   total: number
 }
 
