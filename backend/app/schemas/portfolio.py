@@ -68,3 +68,34 @@ class ImportResponse(BaseModel):
     imported_transactions: int
     imported_dividends: int
     account: str
+
+
+class TopHoldingItemSummary(BaseModel):
+    """Schema for a single top holding in portfolio summary."""
+
+    ticker: str
+    value: float
+
+
+class PortfolioSummaryResponse(BaseModel):
+    """Response schema for portfolio dashboard summary."""
+
+    portfolio_value: float
+    total_invested: float
+    profit: float
+    profit_percentage: float
+    top_holdings: list[TopHoldingItemSummary]
+
+
+class DividendSummaryResponse(BaseModel):
+    """Schema for yearly dividend summary."""
+
+    year: int
+    total: float
+
+
+class DividendTimelineResponse(BaseModel):
+    """Schema for monthly dividend timeline."""
+
+    month: int
+    total: float

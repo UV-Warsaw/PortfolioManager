@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import Dashboard from './components/Dashboard'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
 import { Bonds } from './components/Bonds'
-import PortfolioValueCards from './components/PortfolioValueCards'
-import TopHoldingsChart from './components/TopHoldingsChart'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -11,7 +10,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'gielda' | 'bonds'
+type DashTab = 'stocks' | 'bonds'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -21,7 +20,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
-  const [dashTab, setDashTab] = useState<DashTab>('gielda')
+  const [dashTab, setDashTab] = useState<DashTab>('stocks')
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
 
@@ -183,8 +182,8 @@ const App: React.FC = () => {
         <nav className="flex items-center gap-1" aria-label="Main navigation">
           <button
             type="button"
-            className={`nav-tab${dashTab === 'gielda' && !showProfile ? ' active' : ''}`}
-            onClick={() => { setDashTab('gielda'); setShowProfile(false) }}
+            className={`nav-tab${dashTab === 'stocks' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('stocks'); setShowProfile(false) }}
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -279,19 +278,31 @@ const App: React.FC = () => {
               />
             </div>
           </div>
-        ) : dashTab === 'gielda' ? (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                Stocks
-              </h2>
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                Import transactions from XTB and track active positions
-              </p>
+        ) : dashTab === 'stocks' ? (
+          <div>
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Stocks
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Portfolio overview, gains and dividends
+                </p>
+              </div>
+              <Dashboard token={token} refreshKey={portfolioRefreshKey} />
             </div>
-            <PortfolioValueCards token={token} refreshKey={portfolioRefreshKey} />
-            <TopHoldingsChart token={token} refreshKey={portfolioRefreshKey} />
-            <ImportForm token={token} onImportSuccess={handleImportSuccess} />
+
+            <div className="max-w-6xl mx-auto px-4 mt-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Import Transactions
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Import new positions from XTB file
+                </p>
+              </div>
+              <ImportForm token={token} onImportSuccess={handleImportSuccess} />
+            </div>
           </div>
         ) : dashTab === 'bonds' ? (
           <div className="max-w-6xl mx-auto">

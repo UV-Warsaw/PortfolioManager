@@ -10,6 +10,8 @@ from app.core.database import get_db
 from app.models.user import User
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
+    DividendSummaryResponse,
+    DividendTimelineResponse,
     HoldingRead,
     ImportResponse,
     PortfolioValueResponse,
@@ -19,6 +21,8 @@ from app.services.auth import get_current_user
 from app.services.excel_import import VALID_ACCOUNTS, parse_excel_to_records
 from app.services.portfolio import (
     get_active_holdings,
+    get_dividend_summary,
+    get_dividend_timeline,
     get_portfolio_value,
     get_top_holdings,
 )
@@ -179,3 +183,83 @@ def get_top_holdings_endpoint(
     """
     get_current_user(credentials, session)
     return get_top_holdings(session)
+
+
+@router.get("/dividends/summary", response_model=list[DividendSummaryResponse])
+def get_dividends_summary_endpoint(
+    account: str | None = Query(
+        default=None, description="Filter by account: IKE, PLN, USD"
+    ),
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> list[DividendSummaryResponse]:
+    """Get dividend summary grouped by year.
+
+    Returns total dividend amounts for each year, optionally
+    filtered by account type.
+
+    Args:
+        account: Optional account filter.
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        List of DividendSummaryResponse with yearly totals.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+        HTTPException 400: Invalid account value.
+    """
+    _current_user: User = get_current_user(credentials, session)
+    acc: str | None = None
+    if account is not None:
+        acc = account.upper()
+        if acc not in VALID_ACCOUNTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
+            )
+    summary = get_dividend_summary(session, account=acc)
+    return [DividendSummaryResponse(**item) for item in summary]
+
+
+@router.get("/dividends/timeline", response_model=list[DividendTimelineResponse])
+def get_dividends_timeline_endpoint(
+    account: str | None = Query(
+        default=None, description="Filter by account: IKE, PLN, USD"
+    ),
+    year: int | None = Query(
+        default=None, description="Filter by specific year (returns 12 months)"
+    ),
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> list[DividendTimelineResponse]:
+    """Get dividend timeline with monthly breakdowns.
+
+    If year is specified, returns 12 months for that year.
+    Otherwise returns all monthly data across all years.
+
+    Args:
+        account: Optional account filter.
+        year: Optional year filter.
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        List of DividendTimelineResponse with monthly totals.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+        HTTPException 400: Invalid account value.
+    """
+    _current_user: User = get_current_user(credentials, session)
+    acc: str | None = None
+    if account is not None:
+        acc = account.upper()
+        if acc not in VALID_ACCOUNTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
+            )
+    timeline = get_dividend_timeline(session, year=year, account=acc)
+    return [DividendTimelineResponse(**item) for item in timeline]

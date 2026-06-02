@@ -4,7 +4,7 @@ import logging
 
 from sqlmodel import Session
 
-from app.repositories.portfolio import TransactionRepository
+from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
     HoldingRead,
     PortfolioValueResponse,
@@ -92,3 +92,34 @@ def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
         for ticker, cost_basis in rows
     ]
     return TopHoldingsResponse(items=items)
+
+
+def get_dividend_summary(session: Session, account: str | None = None) -> list[dict]:
+    """Get dividend summary grouped by year.
+
+    Args:
+        session: Database session.
+        account: Optional account filter (IKE, PLN, USD).
+
+    Returns:
+        List of dicts with 'year' and 'total' keys.
+    """
+    repo = DividendRepository(session)
+    return repo.get_yearly_summary(account=account)
+
+
+def get_dividend_timeline(
+    session: Session, year: int | None = None, account: str | None = None
+) -> list[dict]:
+    """Get dividend timeline by month.
+
+    Args:
+        session: Database session.
+        year: Optional year filter — returns 12 months for that year.
+        account: Optional account filter (IKE, PLN, USD).
+
+    Returns:
+        List of dicts with 'month' and 'total' keys.
+    """
+    repo = DividendRepository(session)
+    return repo.get_monthly_timeline(year=year, account=account)
