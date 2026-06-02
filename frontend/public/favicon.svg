@@ -3,5 +3,5 @@
   <rect width="24" height="24" fill="#6366f1" rx="4"/>
   <!-- Chart icon in white -->
   <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" stroke="white" stroke-width="2" fill="none"></polyline>
-  <polyline points="16 7 22 7 22 13" stroke="white" stroke-width="2" fill="none"></polyline>
+  <polyline points="18 9 21 9 21 12" stroke="white" stroke-width="2" fill="none"></polyline>
 </svg>
