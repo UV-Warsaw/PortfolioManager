@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import Dashboard from './components/Dashboard'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
 import PortfolioValueCards from './components/PortfolioValueCards'
@@ -268,18 +269,30 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : dashTab === 'gielda' ? (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                Gielda
-              </h2>
-              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                Importuj transakcje z XTB i sledz aktywne pozycje
-              </p>
+          <div>
+            <div className="max-w-6xl mx-auto px-4">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Dashboard
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Przegląd portfela, zyski i dywidendy
+                </p>
+              </div>
+              <Dashboard token={token} refreshKey={portfolioRefreshKey} />
             </div>
-            <PortfolioValueCards token={token} refreshKey={portfolioRefreshKey} />
-            <TopHoldingsChart token={token} refreshKey={portfolioRefreshKey} />
-            <ImportForm token={token} onImportSuccess={handleImportSuccess} />
+
+            <div className="max-w-6xl mx-auto px-4 mt-8">
+              <div className="mb-6">
+                <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Import transakcji
+                </h2>
+                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                  Zaimportuj nowe pozycje z pliku XTB
+                </p>
+              </div>
+              <ImportForm token={token} onImportSuccess={handleImportSuccess} />
+            </div>
           </div>
         ) : null}
       </main>
