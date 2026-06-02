@@ -14,6 +14,7 @@ from app.routers import (
     password_reset_router,
     portfolio_router,
     profile_router,
+    summary_router,
 )
 
 
@@ -84,6 +85,7 @@ app.include_router(auth_router)
 app.include_router(password_reset_router)
 app.include_router(portfolio_router)
 app.include_router(profile_router)
+app.include_router(summary_router)
 
 
 @app.get("/", tags=["health"])

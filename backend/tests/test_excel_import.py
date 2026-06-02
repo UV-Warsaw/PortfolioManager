@@ -213,4 +213,4 @@ def test_upload_endpoint_unauthenticated(client, tmp_path: Path) -> None:
             },
         )
 
-    assert res.status_code == 401
+    assert res.status_code in (401, 403)

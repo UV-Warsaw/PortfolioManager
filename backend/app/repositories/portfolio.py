@@ -126,7 +126,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         """
         net_qty = func.sum(
             case(
-                (Transaction.type == "SELL", -Transaction.quantity),
+                (Transaction.type.in_(["SELL", "Stock sell"]), -Transaction.quantity),
                 else_=Transaction.quantity,
             )
         ).label("net_quantity")
@@ -150,7 +150,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         """Return current market value per account — sum of market_price * quantity.
 
         Only open BUY positions with a non-null market_price and ticker are included.
-        Cash-operation rows (ticker IS NULL or type != BUY) are excluded.
+        Cash-operation rows (ticker IS NULL or type not BUY/Stock purchase) are excluded.
 
         Values are stored in PLN — USD prices are converted during import.
 
@@ -167,7 +167,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 Transaction.market_price.is_not(None),
                 Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type == "BUY",
+                Transaction.type.in_(["BUY", "Stock purchase"]),
             )
             .group_by(Transaction.account)
         )
@@ -181,7 +181,7 @@ class TransactionRepository(BaseRepository[Transaction]):
     def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
         """Return the top N holdings by current market value across all accounts.
 
-        Market value is computed as sum(market_price * quantity) for BUY rows.
+        Market value is computed as sum(market_price * quantity) for BUY/Stock purchase rows.
         Only positions with a non-null market_price and ticker are considered.
 
         Args:
@@ -200,7 +200,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 Transaction.market_price.is_not(None),
                 Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type == "BUY",
+                Transaction.type.in_(["BUY", "Stock purchase"]),
             )
             .group_by(Transaction.ticker)
             .having(market_val > 0)
@@ -307,59 +307,62 @@ class DividendRepository(BaseRepository[Dividend]):
         return created, skipped
 
     def get_yearly_summary(self, account: str | None = None) -> list[dict]:
-        """Get dividend summary grouped by year.
+        """Get yearly dividend summary aggregated by year.
 
         Args:
             account: Optional account filter (IKE, PLN, USD).
 
         Returns:
-            List of dicts with 'year' and 'total' keys.
+            List of dicts with keys 'year' and 'total', ordered by year.
         """
-        stmt = (
-            select(
-                func.strftime("%Y", Dividend.date).label("year"),
-                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
-            )
-            .group_by("year")
-            .order_by("year")
-        )
+        from sqlalchemy import extract
+
+        year_col = extract("year", Dividend.date).label("year")
+        total_col = func.sum(Dividend.amount).label("total")
+
+        stmt = select(year_col, total_col).where(Dividend.date.is_not(None))
 
         if account:
             stmt = stmt.where(Dividend.account == account)
 
-        results = self.session.exec(stmt).all()
-        return [{"year": r[0], "total": float(r[1])} for r in results]
+        stmt = stmt.group_by(year_col).order_by(year_col)
+
+        rows = self.session.exec(stmt).all()
+        return [
+            {"year": int(row[0]), "total": round(float(row[1]) if row[1] else 0.0, 2)}
+            for row in rows
+        ]
 
     def get_monthly_timeline(
         self, year: int | None = None, account: str | None = None
     ) -> list[dict]:
-        """Get dividend timeline by month.
+        """Get monthly dividend timeline.
 
         Args:
             year: Optional year filter — returns 12 months for that year.
             account: Optional account filter (IKE, PLN, USD).
 
         Returns:
-            List of dicts with 'month', 'total', and optionally 'year' keys.
+            List of dicts with keys 'month' and 'total', ordered by month (1-12).
         """
+        from sqlalchemy import extract
+
+        month_col = extract("month", Dividend.date).label("month")
+        total_col = func.sum(Dividend.amount).label("total")
+
+        stmt = select(month_col, total_col).where(Dividend.date.is_not(None))
+
         if year:
-            stmt = (
-                select(
-                    func.strftime("%m", Dividend.date).label("month"),
-                    func.coalesce(func.sum(Dividend.amount), 0).label("total"),
-                )
-                .where(func.strftime("%Y", Dividend.date) == str(year))
-                .group_by("month")
-            )
-        else:
-            stmt = select(
-                func.strftime("%Y-%m", Dividend.date).label("month"),
-                func.coalesce(func.sum(Dividend.amount), 0).label("total"),
-            ).group_by("month")
+            year_col = extract("year", Dividend.date)
+            stmt = stmt.where(year_col == year)
 
         if account:
             stmt = stmt.where(Dividend.account == account)
 
-        stmt = stmt.order_by("month")
-        results = self.session.exec(stmt).all()
-        return [{"month": r[0], "total": float(r[1])} for r in results]
+        stmt = stmt.group_by(month_col).order_by(month_col)
+
+        rows = self.session.exec(stmt).all()
+        return [
+            {"month": int(row[0]), "total": round(float(row[1]) if row[1] else 0.0, 2)}
+            for row in rows
+        ]

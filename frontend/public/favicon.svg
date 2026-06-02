@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Purple background -->
+  <rect width="24" height="24" fill="#6366f1" rx="4"/>
+  <!-- Chart icon in white -->
+  <polyline points="18 9 12.9 14.1 9.9 11.1 6 15" stroke="white" stroke-width="1.5" fill="none"></polyline>
+  <polyline points="14.4 9 18 9 18 12.6" stroke="white" stroke-width="1.5" fill="none"></polyline>
+</svg>
