@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import {
   getDashboardSummary,
   getDividendYearlySummary,
+  getDividendTimeline,
   type PortfolioSummaryResponse,
   type DividendSummaryResponse,
+  type DividendTimelineResponse,
 } from '../services/portfolioApi'
 
 interface Props {
@@ -212,7 +214,7 @@ function DividendBarChart({ yearly, token }: { yearly: DividendSummaryResponse[]
   useEffect(() => {
     if (selectedYear) {
       setLoading(true)
-      getDividendTimeline(token, selectedYear).then((data) => setMonthlyData(data)).catch((err) => console.error('Failed to load monthly data:', err)).finally(() => setLoading(false))
+      getDividendTimeline(token, selectedYear).then((data: DividendTimelineResponse[]) => setMonthlyData(data)).catch((err: Error) => console.error('Failed to load monthly data:', err)).finally(() => setLoading(false))
     }
   }, [selectedYear, token])
 
