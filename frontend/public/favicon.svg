@@ -2,6 +2,6 @@
   <!-- Purple background -->
   <rect width="24" height="24" fill="#6366f1" rx="4"/>
   <!-- Chart icon in white -->
-  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" stroke="white" stroke-width="2" fill="none"></polyline>
-  <polyline points="18 9 21 9 21 12" stroke="white" stroke-width="2" fill="none"></polyline>
+  <polyline points="18 9 12.9 14.1 9.9 11.1 6 15" stroke="white" stroke-width="1.5" fill="none"></polyline>
+  <polyline points="14.4 9 18 9 18 12.6" stroke="white" stroke-width="1.5" fill="none"></polyline>
 </svg>
