@@ -1,13 +1,32 @@
-/**
- * Bonds component for displaying and managing bonds.
- */
-
 import React, { useState, useEffect } from 'react'
-import type { Bond, BondCreate, BondUpdate } from '../types/api'
-import { getBonds, createBond, updateBond, deleteBond } from '../services/bondsApi'
+import { Line } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+
+import {
+  getBonds,
+  getBondAnalysis,
+  getBondsPortfolioSummary,
+  createBond,
+  updateBond,
+  deleteBond,
+  type Bond,
+  type BondAnalysis,
+  type BondsPortfolioSummary,
+} from '../services/bondsApi'
+import type { BondCreate, BondUpdate } from '../types/api'
 import { BondForm } from './BondForm'
 import { ErrorDisplay } from './ErrorDisplay'
 import { Loading } from './Loading'
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend)
 
 interface BondsProps {
   token: string
@@ -15,26 +34,60 @@ interface BondsProps {
 
 export const Bonds: React.FC<BondsProps> = ({ token }) => {
   const [bonds, setBonds] = useState<Bond[]>([])
+  const [summary, setSummary] = useState<BondsPortfolioSummary | null>(null)
+  const [selectedBond, setSelectedBond] = useState<Bond | null>(null)
+  const [bondAnalysis, setBondAnalysis] = useState<BondAnalysis | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [showForm, setShowForm] = useState(false)
-  const [editingBond, setEditingBond] = useState<Bond | undefined>()
+  const [editingBond, setEditingBond] = useState<Bond | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
   useEffect(() => {
-    loadBonds()
+    loadData()
   }, [token])
 
-  const loadBonds = async () => {
+  useEffect(() => {
+    if (selectedBond) {
+      fetchBondAnalysis(selectedBond.id)
+    }
+  }, [selectedBond])
+
+  const loadData = async () => {
     setLoading(true)
     setError('')
     try {
-      const data = await getBonds(token)
-      setBonds(data)
+      const [bondsData, summaryData] = await Promise.all([
+        getBonds(token),
+        getBondsPortfolioSummary(token),
+      ])
+
+      setBonds(bondsData)
+      setSummary(summaryData)
+
+      if (bondsData.length > 0 && !selectedBond) {
+        setSelectedBond(bondsData[0])
+      } else if (selectedBond && bondsData.length > 0) {
+        const updated = bondsData.find((b) => b.id === selectedBond.id)
+        if (updated) {
+          setSelectedBond(updated)
+        } else {
+          setSelectedBond(bondsData[0])
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bonds')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBondAnalysis = async (bondId: number) => {
+    try {
+      const analysis = await getBondAnalysis(token, bondId)
+      setBondAnalysis(analysis)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bond analysis')
     }
   }
 
@@ -48,18 +101,13 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
         await createBond(token, data as BondCreate)
       }
       setShowForm(false)
-      setEditingBond(undefined)
-      await loadBonds()
+      setEditingBond(null)
+      await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save bond')
     } finally {
       setFormLoading(false)
     }
-  }
-
-  const handleEditBond = (bond: Bond) => {
-    setEditingBond(bond)
-    setShowForm(true)
   }
 
   const handleDeleteBond = async (bondId: number) => {
@@ -69,7 +117,11 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
 
     try {
       await deleteBond(token, bondId)
-      await loadBonds()
+      if (selectedBond?.id === bondId) {
+        setSelectedBond(null)
+        setBondAnalysis(null)
+      }
+      await loadData()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete bond')
     }
@@ -77,19 +129,84 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
 
   const handleCancel = () => {
     setShowForm(false)
-    setEditingBond(undefined)
+    setEditingBond(null)
     setError('')
   }
 
-  const getTotalValue = (): number => {
-    return bonds.reduce((total, bond) => {
-      const price = bond.current_price ?? bond.purchase_price
-      return total + price * bond.quantity
-    }, 0)
-  }
+  // Dynamic chart colors for dark theme
+  const textColor = '#ffffff'
+  const gridColor = 'rgba(99, 102, 241, 0.1)'
 
-  const getTotalInvested = (): number => {
-    return bonds.reduce((total, bond) => total + bond.purchase_price * bond.quantity, 0)
+  // Prepare chart data
+  const chartData = bondAnalysis
+    ? {
+        labels: bondAnalysis.value_projection.map((point) => {
+          const date = new Date(point.date)
+          return `${date.getMonth() + 1}/${date.getFullYear()}`
+        }),
+        datasets: [
+          {
+            label: 'Bond Value Growth',
+            data: bondAnalysis.value_projection.map((point) => point.total_value),
+            borderColor: 'rgba(99, 102, 241, 1)',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      }
+    : null
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top' as const,
+        labels: {
+          color: textColor,
+          font: {
+            size: 12,
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: 'rgba(99, 102, 241, 0.5)',
+        borderWidth: 1,
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: textColor,
+        },
+      },
+      y: {
+        beginAtZero: false,
+        grid: {
+          color: gridColor,
+        },
+        ticks: {
+          color: textColor,
+          callback: function (value: any) {
+            return value.toLocaleString('en-US', {
+              style: 'currency',
+              currency: 'PLN',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })
+          },
+        },
+      },
+    },
   }
 
   if (loading) {
@@ -97,149 +214,444 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {error && <ErrorDisplay error={error} />}
+    <div style={{ minHeight: '100vh', padding: '24px' }}>
+      {/* Header */}
+      <div
+        style={{
+          marginBottom: '32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: '28px',
+              fontWeight: 'bold',
+              background: 'linear-gradient(to right, #818cf8, #a78bfa)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              marginBottom: '8px',
+            }}
+          >
+            Bonds Portfolio
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+            Manage your bonds and track their growth
+          </p>
+        </div>
 
-      {showForm ? (
-        <BondForm
-          bond={editingBond}
-          onSubmit={handleCreateBond}
-          onCancel={handleCancel}
-          isLoading={formLoading}
-        />
+        <button
+          onClick={() => {
+            setEditingBond(null)
+            setShowForm(true)
+          }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            background: 'rgba(99, 102, 241, 0.1)',
+            color: '#6366f1',
+            fontSize: '14px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <span>+</span> Add Bond
+        </button>
+      </div>
+
+      {/* Error Display */}
+      {error && <ErrorDisplay message={error} />}
+
+      {/* Form */}
+      {showForm && (
+        <div
+          style={{
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '12px',
+            padding: '24px',
+            marginBottom: '24px',
+          }}
+        >
+          <BondForm
+            bond={editingBond}
+            onSubmit={handleCreateBond}
+            onCancel={handleCancel}
+            isLoading={formLoading}
+          />
+        </div>
+      )}
+
+      {bonds.length === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: '48px 24px',
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '12px',
+          }}
+        >
+          <p style={{ color: 'var(--text-tertiary)', marginBottom: '16px' }}>
+            No bonds yet. Start by adding one!
+          </p>
+          <button
+            onClick={() => setShowForm(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              background: 'rgba(99, 102, 241, 0.1)',
+              color: '#6366f1',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            Create First Bond
+          </button>
+        </div>
       ) : (
         <>
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">Bonds</h1>
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
+          {/* Summary Cards */}
+          {summary && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '12px',
+                marginBottom: '24px',
+              }}
             >
-              + Add Bond
-            </button>
-          </div>
-
-          {bonds.length === 0 ? (
-            <div className="bg-gray-50 rounded-lg p-8 text-center">
-              <p className="text-gray-600 mb-4">No bonds yet. Start by adding your first bond!</p>
-              <button
-                onClick={() => setShowForm(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium"
-              >
-                Add Your First Bond
-              </button>
+              <div style={summaryCardStyle}>
+                <span style={summaryLabelStyle}>Total Invested</span>
+                <span style={summaryValueStyle}>
+                  {summary.total_invested.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  PLN
+                </span>
+              </div>
+              <div style={summaryCardStyle}>
+                <span style={summaryLabelStyle}>Current Value</span>
+                <span style={summaryValueStyle}>
+                  {summary.current_total_value.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  PLN
+                </span>
+              </div>
+              <div style={summaryCardStyle}>
+                <span style={summaryLabelStyle}>Total Profit</span>
+                <span
+                  style={{
+                    ...summaryValueStyle,
+                    color: summary.total_profit >= 0 ? '#34d399' : '#f87171',
+                  }}
+                >
+                  {summary.total_profit.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  PLN
+                </span>
+              </div>
+              <div style={summaryCardStyle}>
+                <span style={summaryLabelStyle}>Profit %</span>
+                <span
+                  style={{
+                    ...summaryValueStyle,
+                    color: summary.total_profit_percentage >= 0 ? '#34d399' : '#f87171',
+                  }}
+                >
+                  {summary.total_profit_percentage.toFixed(2)}%
+                </span>
+              </div>
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-gray-600 text-sm font-medium">Total Market Value</p>
-                  <p className="text-3xl font-bold text-indigo-600 mt-2">
-                    {getTotalValue().toFixed(2)} PLN
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-gray-600 text-sm font-medium">Total Invested</p>
-                  <p className="text-3xl font-bold text-indigo-600 mt-2">
-                    {getTotalInvested().toFixed(2)} PLN
-                  </p>
-                </div>
-                <div className="bg-white rounded-lg shadow p-6">
-                  <p className="text-gray-600 text-sm font-medium">Unrealized Gain/Loss</p>
-                  <p
-                    className={`text-3xl font-bold mt-2 ${
-                      getTotalValue() - getTotalInvested() >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}
-                  >
-                    {(getTotalValue() - getTotalInvested()).toFixed(2)} PLN
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Interest Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Quantity
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Purchase Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Current Price
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Value
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {bonds.map((bond) => {
-                      const currentPrice = bond.current_price ?? bond.purchase_price
-                      const totalValue = currentPrice * bond.quantity
-                      const gain = (currentPrice - bond.purchase_price) * bond.quantity
-
-                      return (
-                        <tr key={bond.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {bond.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {bond.interest_rate.toFixed(2)}% ({bond.capitalization})
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">{bond.quantity}</td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {bond.purchase_price.toFixed(2)} PLN
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-700">
-                            {currentPrice.toFixed(2)} PLN
-                          </td>
-                          <td className={`px-6 py-4 text-sm font-semibold ${
-                            gain >= 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {totalValue.toFixed(2)} PLN
-                            {gain !== 0 && (
-                              <div className="text-xs font-normal">
-                                ({gain > 0 ? '+' : ''}{gain.toFixed(2)} PLN)
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm space-x-2">
-                            <button
-                              onClick={() => handleEditBond(bond)}
-                              className="text-indigo-600 hover:text-indigo-900 font-medium"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBond(bond.id)}
-                              className="text-red-600 hover:text-red-900 font-medium"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
           )}
+
+          {/* Main Content */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '300px 1fr',
+              gap: '24px',
+            }}
+          >
+            {/* Bonds List */}
+            <div
+              style={{
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                borderRadius: '12px',
+                padding: '16px',
+                maxHeight: '600px',
+                overflowY: 'auto',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-secondary)',
+                  marginBottom: '16px',
+                }}
+              >
+                Your Bonds
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {bonds.map((bond) => (
+                  <div
+                    key={bond.id}
+                    onClick={() => setSelectedBond(bond)}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '6px',
+                      background:
+                        selectedBond?.id === bond.id
+                          ? 'rgba(99, 102, 241, 0.15)'
+                          : 'transparent',
+                      border: `1px solid ${
+                        selectedBond?.id === bond.id
+                          ? 'rgba(99, 102, 241, 0.3)'
+                          : 'transparent'
+                      }`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: 'var(--text-primary)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      {bond.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: 'var(--text-tertiary)',
+                      }}
+                    >
+                      {bond.quantity}x @ {bond.purchase_price.toFixed(2)} PLN
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Selected Bond Details */}
+            {selectedBond && bondAnalysis ? (
+              <div>
+                {/* Bond Info Card */}
+                <div
+                  style={{
+                    background: 'var(--glass-bg)',
+                    border: '1px solid var(--glass-border)',
+                    borderRadius: '12px',
+                    padding: '24px',
+                    marginBottom: '24px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <div>
+                      <h3
+                        style={{
+                          fontSize: '18px',
+                          fontWeight: 'bold',
+                          color: 'var(--text-primary)',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        {selectedBond.name}
+                      </h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                        {selectedBond.interest_rate}% annual rate, {selectedBond.capitalization}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => {
+                          setEditingBond(selectedBond)
+                          setShowForm(true)
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(99, 102, 241, 0.3)',
+                          background: 'rgba(99, 102, 241, 0.1)',
+                          color: '#6366f1',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteBond(selectedBond.id)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(248, 113, 113, 0.3)',
+                          background: 'rgba(248, 113, 113, 0.1)',
+                          color: '#f87171',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Stats Grid */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '16px',
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                        CURRENT VALUE
+                      </span>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                        {bondAnalysis.current_total_value.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        PLN
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                        PROFIT / LOSS
+                      </span>
+                      <div
+                        style={{
+                          color:
+                            bondAnalysis.profit >= 0
+                              ? '#34d399'
+                              : '#f87171' || 'var(--text-primary)',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {bondAnalysis.profit.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        PLN
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                        PROFIT %
+                      </span>
+                      <div
+                        style={{
+                          color:
+                            bondAnalysis.profit_percentage >= 0
+                              ? '#34d399'
+                              : '#f87171' || 'var(--text-primary)',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {bondAnalysis.profit_percentage.toFixed(2)}%
+                      </div>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                        SALE VALUE (AFTER TAX)
+                      </span>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                        {bondAnalysis.sale_value_after_tax.toLocaleString('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{' '}
+                        PLN
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chart */}
+                {chartData && (
+                  <div
+                    style={{
+                      background: 'var(--glass-bg)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '12px',
+                      padding: '24px',
+                      height: '400px',
+                    }}
+                  >
+                    <h3
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                        color: 'var(--text-secondary)',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      Value Projection
+                    </h3>
+                    <Line data={chartData} options={chartOptions} height={320} />
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
         </>
       )}
     </div>
   )
+}
+
+const summaryCardStyle = {
+  background: 'var(--glass-bg)',
+  border: '1px solid var(--glass-border)',
+  borderRadius: '10px',
+  padding: '16px 20px',
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: '6px',
+}
+
+const summaryLabelStyle = {
+  fontSize: '10px',
+  fontWeight: 600,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase' as const,
+  color: 'var(--text-tertiary)',
+}
+
+const summaryValueStyle = {
+  fontSize: '18px',
+  fontWeight: 700,
+  color: 'var(--text-primary)',
+  fontVariantNumeric: 'tabular-nums' as const,
 }

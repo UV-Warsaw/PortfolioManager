@@ -189,7 +189,7 @@ const App: React.FC = () => {
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
             </svg>
-            Trading
+            Stocks
           </button>
 
           <button
@@ -283,7 +283,7 @@ const App: React.FC = () => {
           <div className="max-w-2xl mx-auto">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                Trading
+                Stocks
               </h2>
               <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                 Import transactions from XTB and track active positions

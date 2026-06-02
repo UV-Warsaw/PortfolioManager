@@ -7,6 +7,32 @@ import type { Bond, BondCreate, BondUpdate } from '../types/api'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+export interface BondValuePoint {
+  date: string
+  principal_value: number
+  total_value: number
+}
+
+export interface BondAnalysis {
+  bond_id: number
+  name: string
+  current_value_per_bond: number
+  current_total_value: number
+  sale_value_after_tax: number
+  profit: number
+  profit_percentage: number
+  value_projection: BondValuePoint[]
+}
+
+export interface BondsPortfolioSummary {
+  total_invested: number
+  current_total_value: number
+  total_profit: number
+  total_profit_percentage: number
+  total_sale_value_after_tax: number
+  bonds_count: number
+}
+
 /**
  * Create a new bond.
  *
@@ -47,6 +73,45 @@ export async function getBond(token: string, bondId: number): Promise<Bond> {
   })
   return response.data
 }
+
+/**
+ * Get bond analysis with value projections.
+ *
+ * @param token - Authentication token
+ * @param bondId - Bond ID
+ * @returns Bond analysis data
+ */
+export async function getBondAnalysis(
+  token: string,
+  bondId: number,
+): Promise<BondAnalysis> {
+  const response = await axios.get<BondAnalysis>(
+    `${API_URL}/portfolio/bonds/${bondId}/analysis`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
+  return response.data
+}
+
+/**
+ * Get bonds portfolio summary.
+ *
+ * @param token - Authentication token
+ * @returns Portfolio summary data
+ */
+export async function getBondsPortfolioSummary(
+  token: string,
+): Promise<BondsPortfolioSummary> {
+  const response = await axios.get<BondsPortfolioSummary>(
+    `${API_URL}/portfolio/bonds/portfolio/summary`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
+  return response.data
+}
+
 
 /**
  * Update an existing bond.

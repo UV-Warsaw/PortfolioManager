@@ -5,8 +5,15 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.database import get_db
-from app.schemas.bonds import BondCreate, BondResponse, BondUpdate
+from app.schemas.bonds import (
+    BondAnalysisResponse,
+    BondCreate,
+    BondResponse,
+    BondUpdate,
+    BondsPortfolioSummaryResponse,
+)
 from app.services.bonds import BondService
+from app.services.bond_calculation import BondCalculationService
 from app.services.auth import get_current_user
 
 router = APIRouter(prefix="/portfolio/bonds", tags=["bonds"])
@@ -139,3 +146,72 @@ def delete_bond(
     service = BondService(session)
     if not service.delete_bond(bond_id):
         raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
+
+
+@router.get("/{bond_id}/analysis", response_model=BondAnalysisResponse)
+def get_bond_analysis(
+    bond_id: int,
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> BondAnalysisResponse:
+    """Get detailed analysis for a single bond.
+
+    Args:
+        bond_id: The bond ID.
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        Detailed bond analysis including value projection.
+
+    Raises:
+        404: If bond not found.
+    """
+    get_current_user(credentials, session)
+    service = BondService(session)
+    bond = service.get_bond(bond_id)
+    if not bond:
+        raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
+    return BondCalculationService.analyze_bond(bond)
+
+
+@router.get("/portfolio/summary", response_model=BondsPortfolioSummaryResponse)
+def get_bonds_portfolio_summary(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> BondsPortfolioSummaryResponse:
+    """Get summary statistics for the bonds portfolio.
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        Portfolio summary with aggregated statistics.
+    """
+    get_current_user(credentials, session)
+    service = BondService(session)
+    bonds = service.list_bonds()
+    # Convert BondResponse to Bond for calculation service
+    from app.models.bonds import Bond
+
+    bond_models = []
+    for bond_resp in bonds:
+        # Reconstruct Bond model from response
+        bond_models.append(
+            Bond(
+                id=bond_resp.id,
+                name=bond_resp.name,
+                interest_rate=bond_resp.interest_rate,
+                interest_period_years=bond_resp.interest_period_years,
+                capitalization=bond_resp.capitalization,
+                purchase_price=bond_resp.purchase_price,
+                current_price=bond_resp.current_price,
+                quantity=bond_resp.quantity,
+                purchase_date=bond_resp.purchase_date,
+                created_at=bond_resp.created_at,
+                updated_at=bond_resp.updated_at,
+            )
+        )
+
+    return BondCalculationService.calculate_portfolio_summary(bond_models)
