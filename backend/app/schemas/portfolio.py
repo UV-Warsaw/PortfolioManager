@@ -84,3 +84,17 @@ class PortfolioSummaryResponse(BaseModel):
     profit: float
     profit_percentage: float
     top_holdings: list[TopHoldingItemSummary]
+
+
+class DividendSummaryResponse(BaseModel):
+    """Schema for yearly dividend summary."""
+
+    year: int
+    total: float
+
+
+class DividendTimelineResponse(BaseModel):
+    """Schema for monthly dividend timeline."""
+
+    month: int
+    total: float
