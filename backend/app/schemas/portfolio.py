@@ -67,3 +67,17 @@ class ImportResponse(BaseModel):
     imported_transactions: int
     imported_dividends: int
     account: str
+
+
+class DividendSummaryResponse(BaseModel):
+    """Response schema for yearly dividend summary."""
+
+    year: str
+    total: float
+
+
+class DividendTimelineResponse(BaseModel):
+    """Response schema for monthly dividend timeline."""
+
+    month: str
+    total: float
