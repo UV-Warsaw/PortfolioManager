@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
-from app.core.database import get_session
+from app.core.database import get_db
 from app.schemas.bonds import BondCreate, BondResponse, BondUpdate
 from app.services.bonds import BondService
 from app.core.config import get_current_user
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/portfolio/bonds", tags=["bonds"])
 @router.post("", response_model=BondResponse, status_code=201)
 def create_bond(
     bond_data: BondCreate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> BondResponse:
     """Create a new bond.
@@ -39,7 +39,7 @@ def create_bond(
 
 @router.get("", response_model=list[BondResponse])
 def list_bonds(
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> list[BondResponse]:
     """Get all bonds.
@@ -58,7 +58,7 @@ def list_bonds(
 @router.get("/{bond_id}", response_model=BondResponse)
 def get_bond(
     bond_id: int,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> BondResponse:
     """Get a single bond by ID.
@@ -85,7 +85,7 @@ def get_bond(
 def update_bond(
     bond_id: int,
     bond_data: BondUpdate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> BondResponse:
     """Update an existing bond.
@@ -116,7 +116,7 @@ def update_bond(
 @router.delete("/{bond_id}", status_code=204)
 def delete_bond(
     bond_id: int,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ) -> None:
     """Delete a bond by ID.
