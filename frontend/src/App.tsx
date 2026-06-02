@@ -11,7 +11,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'gielda'
+type DashTab = 'trading'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -21,7 +21,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
-  const [dashTab, setDashTab] = useState<DashTab>('gielda')
+  const [dashTab, setDashTab] = useState<DashTab>('trading')
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
 
@@ -183,26 +183,26 @@ const App: React.FC = () => {
         <nav className="flex items-center gap-1" aria-label="Main navigation">
           <button
             type="button"
-            className={`nav-tab${dashTab === 'gielda' && !showProfile ? ' active' : ''}`}
-            onClick={() => { setDashTab('gielda'); setShowProfile(false) }}
+            className={`nav-tab${dashTab === 'trading' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('trading'); setShowProfile(false) }}
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
             </svg>
-            Gielda
+            Trading
           </button>
 
           <button
             type="button"
             className="nav-tab coming-soon"
             disabled
-            title="Dostepne wkrotce"
+            title="Coming soon"
             aria-disabled="true"
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
-            Krypto
+            Crypto
           </button>
         </nav>
 
@@ -268,7 +268,7 @@ const App: React.FC = () => {
               />
             </div>
           </div>
-        ) : dashTab === 'gielda' ? (
+        ) : dashTab === 'trading' ? (
           <div>
             <div className="max-w-6xl mx-auto px-4">
               <div className="mb-6">
@@ -276,7 +276,7 @@ const App: React.FC = () => {
                   Dashboard
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  Przegląd portfela, zyski i dywidendy
+                  Portfolio overview, gains and dividends
                 </p>
               </div>
               <Dashboard token={token} refreshKey={portfolioRefreshKey} />
@@ -285,10 +285,10 @@ const App: React.FC = () => {
             <div className="max-w-6xl mx-auto px-4 mt-8">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                  Import transakcji
+                  Import Transactions
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
-                  Zaimportuj nowe pozycje z pliku XTB
+                  Import new positions from XTB file
                 </p>
               </div>
               <ImportForm token={token} onImportSuccess={handleImportSuccess} />
