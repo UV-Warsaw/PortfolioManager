@@ -21,6 +21,36 @@ class BaseRepository(Generic[ModelType]):
         self.model = model
         self.session = session
 
+    def create(self, record: ModelType) -> ModelType:
+        """
+        Create and persist a new record.
+
+        Args:
+            record: Model instance to persist.
+
+        Returns:
+            The persisted model instance.
+        """
+        self.session.add(record)
+        self.session.commit()
+        self.session.refresh(record)
+        return record
+
+    def update(self, record: ModelType) -> ModelType:
+        """
+        Update and persist an existing record.
+
+        Args:
+            record: Model instance with updated values.
+
+        Returns:
+            The updated model instance.
+        """
+        self.session.add(record)
+        self.session.commit()
+        self.session.refresh(record)
+        return record
+
     def get_by_id(self, record_id: int) -> ModelType | None:
         """
         Retrieve a single record by primary key.
