@@ -126,7 +126,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         """
         net_qty = func.sum(
             case(
-                (Transaction.type == "SELL", -Transaction.quantity),
+                (Transaction.type.in_(["SELL", "Stock sell"]), -Transaction.quantity),
                 else_=Transaction.quantity,
             )
         ).label("net_quantity")
@@ -150,7 +150,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         """Return current market value per account — sum of market_price * quantity.
 
         Only open BUY positions with a non-null market_price and ticker are included.
-        Cash-operation rows (ticker IS NULL or type != BUY) are excluded.
+        Cash-operation rows (ticker IS NULL or type not BUY/Stock purchase) are excluded.
 
         Values are stored in PLN — USD prices are converted during import.
 
@@ -167,7 +167,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 Transaction.market_price.is_not(None),
                 Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type == "BUY",
+                Transaction.type.in_(["BUY", "Stock purchase"]),
             )
             .group_by(Transaction.account)
         )
@@ -181,7 +181,7 @@ class TransactionRepository(BaseRepository[Transaction]):
     def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
         """Return the top N holdings by current market value across all accounts.
 
-        Market value is computed as sum(market_price * quantity) for BUY rows.
+        Market value is computed as sum(market_price * quantity) for BUY/Stock purchase rows.
         Only positions with a non-null market_price and ticker are considered.
 
         Args:
@@ -200,7 +200,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 Transaction.market_price.is_not(None),
                 Transaction.quantity.is_not(None),
                 Transaction.ticker.is_not(None),
-                Transaction.type == "BUY",
+                Transaction.type.in_(["BUY", "Stock purchase"]),
             )
             .group_by(Transaction.ticker)
             .having(market_val > 0)

@@ -45,7 +45,7 @@ class SummaryService:
         for holding in holdings:
             stmt = select(func.sum(Transaction.amount)).where(
                 Transaction.ticker == holding["ticker"],
-                Transaction.type == "BUY",
+                Transaction.type.in_(["BUY", "Stock purchase"]),
                 Transaction.account == holding["account"],
             )
             if account:
