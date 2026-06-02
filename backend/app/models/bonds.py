@@ -18,11 +18,11 @@ class Bond(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field()
-    interest_rate: float = Field()
-    interest_period_years: float = Field()
+    annual_rate: float = Field()  # Renamed from interest_rate
+    years: float = Field()  # Renamed from interest_period_years
     capitalization: CapitalizationType = Field()
-    purchase_price: float = Field()
-    current_price: float | None = Field(default=None)
+    principal: float = Field()  # Renamed from purchase_price
+    redemption_price: float | None = Field(default=None)  # Renamed from current_price
     quantity: int = Field(default=1)
     purchase_date: datetime = Field()
     created_at: datetime = Field(default_factory=datetime.now)

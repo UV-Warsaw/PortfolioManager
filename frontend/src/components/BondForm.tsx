@@ -20,11 +20,11 @@ export const BondForm: React.FC<BondFormProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     name: bond?.name ?? '',
-    interest_rate: bond?.interest_rate ?? '',
-    interest_period_years: bond?.interest_period_years ?? '',
+    annual_rate: bond?.annual_rate ?? '',
+    years: bond?.years ?? '',
     capitalization: bond?.capitalization ?? 'ANNUAL',
-    purchase_price: bond?.purchase_price ?? '',
-    current_price: bond?.current_price ?? '',
+    principal: bond?.principal ?? '',
+    redemption_price: bond?.redemption_price ?? '',
     quantity: bond?.quantity ?? 1,
     purchase_date: bond?.purchase_date?.split('T')[0] ?? '',
   })
@@ -49,12 +49,12 @@ export const BondForm: React.FC<BondFormProps> = ({
     try {
       const submitData = {
         name: formData.name,
-        interest_rate: parseFloat(formData.interest_rate as string),
-        interest_period_years: parseFloat(formData.interest_period_years as string),
+        annual_rate: parseFloat(formData.annual_rate as string),
+        years: parseFloat(formData.years as string),
         capitalization: formData.capitalization as 'ANNUAL' | 'MONTHLY',
-        purchase_price: parseFloat(formData.purchase_price as string),
-        current_price: formData.current_price
-          ? parseFloat(formData.current_price as string)
+        principal: parseFloat(formData.principal as string),
+        redemption_price: formData.redemption_price
+          ? parseFloat(formData.redemption_price as string)
           : null,
         quantity: formData.quantity as number,
         purchase_date: new Date(formData.purchase_date as string).toISOString(),
@@ -67,23 +67,23 @@ export const BondForm: React.FC<BondFormProps> = ({
         return
       }
 
-      if (!formData.interest_rate || parseFloat(formData.interest_rate as string) < 0) {
-        setError('Interest rate must be a non-negative number')
+      if (!formData.annual_rate || parseFloat(formData.annual_rate as string) < 0) {
+        setError('Annual rate must be a non-negative number')
         setSubmitting(false)
         return
       }
 
       if (
-        !formData.interest_period_years ||
-        parseFloat(formData.interest_period_years as string) <= 0
+        !formData.years ||
+        parseFloat(formData.years as string) <= 0
       ) {
-        setError('Interest period must be a positive number')
+        setError('Years must be a positive number')
         setSubmitting(false)
         return
       }
 
-      if (!formData.purchase_price || parseFloat(formData.purchase_price as string) <= 0) {
-        setError('Purchase price must be a positive number')
+      if (!formData.principal || parseFloat(formData.principal as string) <= 0) {
+        setError('Principal must be a positive number')
         setSubmitting(false)
         return
       }
@@ -194,12 +194,12 @@ export const BondForm: React.FC<BondFormProps> = ({
               marginBottom: '6px',
             }}
           >
-            Interest Rate (%) *
+            Annual Rate (%) *
           </label>
           <input
             type="number"
-            name="interest_rate"
-            value={formData.interest_rate}
+            name="annual_rate"
+            value={formData.annual_rate}
             onChange={handleChange}
             step="0.01"
             min="0"
@@ -231,12 +231,12 @@ export const BondForm: React.FC<BondFormProps> = ({
               marginBottom: '6px',
             }}
           >
-            Interest Period (Years) *
+            Years *
           </label>
           <input
             type="number"
-            name="interest_period_years"
-            value={formData.interest_period_years}
+            name="years"
+            value={formData.years}
             onChange={handleChange}
             step="0.1"
             min="0.1"
@@ -302,12 +302,12 @@ export const BondForm: React.FC<BondFormProps> = ({
               marginBottom: '6px',
             }}
           >
-            Purchase Price (PLN) *
+            Principal (PLN) *
           </label>
           <input
             type="number"
-            name="purchase_price"
-            value={formData.purchase_price}
+            name="principal"
+            value={formData.principal}
             onChange={handleChange}
             step="0.01"
             min="0.01"
@@ -338,12 +338,12 @@ export const BondForm: React.FC<BondFormProps> = ({
               marginBottom: '6px',
             }}
           >
-            Current Price (PLN)
+            Redemption Price (PLN)
           </label>
           <input
             type="number"
-            name="current_price"
-            value={formData.current_price}
+            name="redemption_price"
+            value={formData.redemption_price}
             onChange={handleChange}
             step="0.01"
             min="0.01"

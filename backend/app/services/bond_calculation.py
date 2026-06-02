@@ -67,11 +67,11 @@ class BondCalculationService:
         years_held = (target_date - bond.purchase_date).days / 365.25
 
         # Don't calculate beyond the bond's interest period
-        years_to_calculate = min(years_held, bond.interest_period_years)
+        years_to_calculate = min(years_held, bond.years)
 
         return BondCalculationService.calculate_compound_interest(
-            principal=bond.purchase_price,
-            annual_rate=bond.interest_rate,
+            principal=bond.principal,
+            annual_rate=bond.annual_rate,
             years=years_to_calculate,
             capitalization=bond.capitalization,
         )
@@ -94,7 +94,7 @@ class BondCalculationService:
             List of value projection points
         """
         if end_date is None:
-            end_date = bond.purchase_date + relativedelta(years=bond.interest_period_years)
+            end_date = bond.purchase_date + relativedelta(years=bond.years)
 
         # Generate evenly spaced dates
         start_date = bond.purchase_date
@@ -133,13 +133,13 @@ class BondCalculationService:
         Returns:
             Value after selling and paying 19% capital gains tax per bond
         """
-        # For bonds, current_price represents the redemption price
+        # For bonds, redemption_price represents the redemption price
         redemption_price = (
-            bond.current_price if bond.current_price is not None else bond.purchase_price
+            bond.redemption_price if bond.redemption_price is not None else bond.principal
         )
 
         # Interest earned = current_value - nominal_price_paid
-        nominal_price_paid = bond.purchase_price
+        nominal_price_paid = bond.principal
         total_interest_earned = current_bond_value - nominal_price_paid
 
         # Sale value = redemption_price + interest_earned
@@ -177,11 +177,11 @@ class BondCalculationService:
         )
 
         profit = (current_total_value * bond.quantity) - (
-            bond.purchase_price * bond.quantity
+            bond.principal * bond.quantity
         )
         profit_percentage = (
-            (profit / (bond.purchase_price * bond.quantity)) * 100
-            if bond.purchase_price > 0
+            (profit / (bond.principal * bond.quantity)) * 100
+            if bond.principal > 0
             else 0
         )
 
@@ -222,7 +222,7 @@ class BondCalculationService:
         total_sale_value_after_tax = 0.0
 
         for bond in bonds:
-            invested = bond.purchase_price * bond.quantity
+            invested = bond.principal * bond.quantity
             current_value_per_bond = BondCalculationService.calculate_value_at_date(
                 bond, current_date
             )

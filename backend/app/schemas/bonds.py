@@ -19,11 +19,11 @@ class BondCreate(BaseModel):
     """Request schema for creating a new bond."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    interest_rate: float = Field(..., ge=0, le=100)
-    interest_period_years: float = Field(..., gt=0)
+    annual_rate: float = Field(..., ge=0, le=100, description="Annual interest rate as percentage")
+    years: float = Field(..., gt=0, description="Maturity period in years")
     capitalization: CapitalizationType
-    purchase_price: float = Field(..., gt=0)
-    current_price: float | None = Field(None, gt=0)
+    principal: float = Field(..., gt=0, description="Principal/nominal value")
+    redemption_price: float | None = Field(None, gt=0, description="Redemption/sale price")
     quantity: int = Field(default=1, ge=1)
     purchase_date: datetime
 
@@ -32,11 +32,11 @@ class BondUpdate(BaseModel):
     """Request schema for updating an existing bond."""
 
     name: str | None = Field(None, min_length=1, max_length=255)
-    interest_rate: float | None = Field(None, ge=0, le=100)
-    interest_period_years: float | None = Field(None, gt=0)
+    annual_rate: float | None = Field(None, ge=0, le=100)
+    years: float | None = Field(None, gt=0)
     capitalization: CapitalizationType | None = None
-    purchase_price: float | None = Field(None, gt=0)
-    current_price: float | None = Field(None, gt=0)
+    principal: float | None = Field(None, gt=0)
+    redemption_price: float | None = Field(None, gt=0)
     quantity: int | None = Field(None, ge=1)
     purchase_date: datetime | None = None
 
@@ -48,11 +48,11 @@ class BondResponse(BaseModel):
 
     id: int
     name: str
-    interest_rate: float
-    interest_period_years: float
+    annual_rate: float
+    years: float
     capitalization: CapitalizationType
-    purchase_price: float
-    current_price: float | None
+    principal: float
+    redemption_price: float | None
     quantity: int
     purchase_date: datetime
     created_at: datetime

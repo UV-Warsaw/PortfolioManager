@@ -39,11 +39,11 @@ class BondService:
 
         bond = Bond(
             name=data.name,
-            interest_rate=data.interest_rate,
-            interest_period_years=data.interest_period_years,
+            annual_rate=data.annual_rate,
+            years=data.years,
             capitalization=data.capitalization,
-            purchase_price=data.purchase_price,
-            current_price=data.current_price,
+            principal=data.principal,
+            redemption_price=data.redemption_price,
             quantity=data.quantity,
             purchase_date=data.purchase_date,
         )
@@ -97,16 +97,16 @@ class BondService:
         # Update fields
         if data.name is not None:
             bond.name = data.name
-        if data.interest_rate is not None:
-            bond.interest_rate = data.interest_rate
-        if data.interest_period_years is not None:
-            bond.interest_period_years = data.interest_period_years
+        if data.annual_rate is not None:
+            bond.annual_rate = data.annual_rate
+        if data.years is not None:
+            bond.years = data.years
         if data.capitalization is not None:
             bond.capitalization = data.capitalization
-        if data.purchase_price is not None:
-            bond.purchase_price = data.purchase_price
-        if data.current_price is not None:
-            bond.current_price = data.current_price
+        if data.principal is not None:
+            bond.principal = data.principal
+        if data.redemption_price is not None:
+            bond.redemption_price = data.redemption_price
         if data.quantity is not None:
             bond.quantity = data.quantity
         if data.purchase_date is not None:
