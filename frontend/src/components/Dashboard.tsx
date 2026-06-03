@@ -85,6 +85,9 @@ function DashboardCard({ stat }: { stat: DashboardStat }) {
 }
 
 function TopHoldingsSection({ holdings }: { holdings: Array<{ ticker: string; value: number }> }) {
+  const top = holdings ? holdings.slice(0, 10) : []
+  const maxValue = top.length > 0 ? Math.max(...top.map((h) => h.value)) : 1
+
   return (
     <div
       style={{
@@ -106,46 +109,63 @@ function TopHoldingsSection({ holdings }: { holdings: Array<{ ticker: string; va
       >
         Top Holdings
       </h3>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}
-      >
-        {holdings && holdings.length > 0 ? (
-          holdings.slice(0, 10).map((holding, idx) => (
-            <div
-              key={idx}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                paddingBottom: '8px',
-                borderBottom: idx < holdings.length - 1 ? '1px solid var(--glass-border)' : 'none',
-              }}
-            >
-              <span
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {top.length > 0 ? (
+          top.map((holding, idx) => {
+            const pct = (holding.value / maxValue) * 100
+            return (
+              <div
+                key={idx}
                 style={{
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
+                  position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 10px',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
                 }}
               >
-                {holding.ticker}
-              </span>
-              <span
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: 'var(--accent-color)',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                {formatPLN(holding.value)}
-              </span>
-            </div>
-          ))
+                {/* background bar */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: `${pct}%`,
+                    background: 'rgba(99,102,241,0.12)',
+                    borderRight: '2px solid rgba(99,102,241,0.35)',
+                    borderRadius: '6px 0 0 6px',
+                    transition: 'width 0.4s ease',
+                  }}
+                />
+                <span
+                  style={{
+                    position: 'relative',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    zIndex: 1,
+                  }}
+                >
+                  {holding.ticker}
+                </span>
+                <span
+                  style={{
+                    position: 'relative',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: 'rgba(99,102,241,0.9)',
+                    fontVariantNumeric: 'tabular-nums',
+                    zIndex: 1,
+                  }}
+                >
+                  {formatPLN(holding.value)}
+                </span>
+              </div>
+            )
+          })
         ) : (
           <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>No holdings</p>
         )}
@@ -206,71 +226,80 @@ function DividendLineChart({ yearly }: { yearly: DividendSummaryResponse[] }) {
 }
 
 function DividendBarChart({ yearly, token }: { yearly: DividendSummaryResponse[]; token: string }) {
-  const [selectedYear, setSelectedYear] = useState<number | null>(yearly[yearly.length - 1]?.year || null)
+  const [selectedYear, setSelectedYear] = useState<number | null>(yearly[yearly.length - 1]?.year ?? new Date().getFullYear())
   const [monthlyData, setMonthlyData] = useState<DividendTimelineResponse[]>([])
   const [loading, setLoading] = useState(false)
-  const [hoveredBar, setHoveredBar] = useState<{ month: number; total: number } | null>(null)
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null)
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+  // Build a full 12-month array, filling missing months with 0
+  const fullYear: DividendTimelineResponse[] = Array.from({ length: 12 }, (_, i) => {
+    const found = monthlyData.find((d) => d.month === i + 1)
+    return { month: i + 1, total: found?.total ?? 0 }
+  })
 
   useEffect(() => {
     if (selectedYear) {
       setLoading(true)
-      getDividendTimeline(token, selectedYear).then((data: DividendTimelineResponse[]) => setMonthlyData(data)).catch((err: Error) => console.error('Failed to load monthly data:', err)).finally(() => setLoading(false))
+      getDividendTimeline(token, selectedYear)
+        .then((data: DividendTimelineResponse[]) => setMonthlyData(data))
+        .catch((err: Error) => console.error('Failed to load monthly data:', err))
+        .finally(() => setLoading(false))
     }
   }, [selectedYear, token])
 
-  if (!monthlyData || monthlyData.length === 0) {
-    return (
-      <div style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '16px 20px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)', marginBottom: '12px' }}>Monthly Dividends {selectedYear}</h3>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-          {yearly.map((d) => (
-            <button key={d.year} onClick={() => setSelectedYear(d.year)} style={{ padding: '6px 12px', border: selectedYear === d.year ? '1px solid #3b82f6' : '1px solid var(--glass-border)', background: selectedYear === d.year ? 'rgba(59, 130, 246, 0.1)' : 'transparent', borderRadius: '6px', color: selectedYear === d.year ? '#3b82f6' : 'var(--text-primary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>{d.year}</button>
-          ))}
-        </div>
-        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>{loading ? 'Loading...' : 'No data for this year'}</p>
-      </div>
-    )
-  }
-
-  const maxValue = Math.max(...monthlyData.map((d) => d.total), 100)
+  const maxValue = Math.max(...fullYear.map((d) => d.total), 1)
   const padding = 40
   const viewBoxWidth = 1000
   const viewBoxHeight = 300
-  const barWidth = (viewBoxWidth - 2 * padding) / Math.max(monthlyData.length, 12)
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const barWidth = (viewBoxWidth - 2 * padding) / 12
 
   return (
     <div style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '16px 20px' }}>
-      <h3 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)', marginBottom: '12px' }}>Monthly Dividends {selectedYear}</h3>
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
-        {yearly.map((d) => (
-          <button key={d.year} onClick={() => setSelectedYear(d.year)} style={{ padding: '6px 12px', border: selectedYear === d.year ? '1px solid #3b82f6' : '1px solid var(--glass-border)', background: selectedYear === d.year ? 'rgba(59, 130, 246, 0.1)' : 'transparent', borderRadius: '6px', color: selectedYear === d.year ? '#3b82f6' : 'var(--text-primary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>{d.year}</button>
-        ))}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+        <h3 style={{ fontSize: '13px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)', margin: 0 }}>Monthly Dividends</h3>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {yearly.map((d) => (
+            <button key={d.year} onClick={() => setSelectedYear(d.year)} style={{ padding: '4px 10px', border: selectedYear === d.year ? '1px solid #3b82f6' : '1px solid var(--glass-border)', background: selectedYear === d.year ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '6px', color: selectedYear === d.year ? '#3b82f6' : 'var(--text-primary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>{d.year}</button>
+          ))}
+          {/* always show current year selector even if no dividend data exists for it */}
+          {!yearly.find((d) => d.year === new Date().getFullYear()) && (
+            <button onClick={() => setSelectedYear(new Date().getFullYear())} style={{ padding: '4px 10px', border: selectedYear === new Date().getFullYear() ? '1px solid #3b82f6' : '1px solid var(--glass-border)', background: selectedYear === new Date().getFullYear() ? 'rgba(59,130,246,0.1)' : 'transparent', borderRadius: '6px', color: selectedYear === new Date().getFullYear() ? '#3b82f6' : 'var(--text-primary)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>{new Date().getFullYear()}</button>
+          )}
+        </div>
       </div>
-      <svg width="100%" height="auto" viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`} style={{ display: 'block', aspectRatio: `${viewBoxWidth}/${viewBoxHeight}` }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((p, i) => <line key={`grid-${i}`} x1={padding} y1={viewBoxHeight - padding - p * (viewBoxHeight - 2 * padding)} x2={viewBoxWidth - padding} y2={viewBoxHeight - padding - p * (viewBoxHeight - 2 * padding)} stroke="var(--glass-border)" strokeWidth="1" />)}
-        <line x1={padding} y1={padding} x2={padding} y2={viewBoxHeight - padding} stroke="var(--glass-border)" strokeWidth="1" />
-        <line x1={padding} y1={viewBoxHeight - padding} x2={viewBoxWidth - padding} y2={viewBoxHeight - padding} stroke="var(--glass-border)" strokeWidth="1" />
-        {monthlyData.map((d, i) => {
-          const barHeight = (d.total / maxValue) * (viewBoxHeight - 2 * padding)
-          const x = padding + i * barWidth + barWidth * 0.1
-          const y = viewBoxHeight - padding - barHeight
-          const isHovered = hoveredBar?.month === d.month
-          return (
-            <g key={`bar-${i}`} style={{ cursor: 'pointer' }} onMouseEnter={() => setHoveredBar(d)} onMouseLeave={() => setHoveredBar(null)}>
-              <rect x={x} y={y} width={barWidth * 0.8} height={barHeight} fill="#10b981" opacity={isHovered ? 1 : 0.7} />
-              {isHovered && (
-                <>
-                  <rect x={x + barWidth * 0.4 - 60} y={y - 45} width="120" height="35" fill="rgba(0,0,0,0.8)" rx="4" />
-                  <text x={x + barWidth * 0.4} y={y - 28} textAnchor="middle" fontSize="12" fill="white" fontWeight="600">{monthNames[d.month - 1]}</text>
-                  <text x={x + barWidth * 0.4} y={y - 12} textAnchor="middle" fontSize="12" fill="white">{d.total.toFixed(2)} PLN</text>
-                </>
-              )}
-            </g>
-          )
-        })}
-        {monthlyData.map((d, i) => <text key={`label-${i}`} x={padding + i * barWidth + barWidth * 0.5} y={viewBoxHeight - padding + 20} textAnchor="middle" fontSize="11" fill="var(--text-tertiary)">{monthNames[d.month - 1]}</text>)}
-      </svg>
+      {loading ? (
+        <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Loading...</p>
+      ) : (
+        <svg width="100%" height="auto" viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`} style={{ display: 'block', aspectRatio: `${viewBoxWidth}/${viewBoxHeight}` }}>
+          {[0, 0.25, 0.5, 0.75, 1].map((p, i) => <line key={`grid-${i}`} x1={padding} y1={viewBoxHeight - padding - p * (viewBoxHeight - 2 * padding)} x2={viewBoxWidth - padding} y2={viewBoxHeight - padding - p * (viewBoxHeight - 2 * padding)} stroke="var(--glass-border)" strokeWidth="1" />)}
+          <line x1={padding} y1={padding} x2={padding} y2={viewBoxHeight - padding} stroke="var(--glass-border)" strokeWidth="1" />
+          <line x1={padding} y1={viewBoxHeight - padding} x2={viewBoxWidth - padding} y2={viewBoxHeight - padding} stroke="var(--glass-border)" strokeWidth="1" />
+          {fullYear.map((d, i) => {
+            const barHeight = maxValue > 0 ? (d.total / maxValue) * (viewBoxHeight - 2 * padding) : 0
+            const x = padding + i * barWidth + barWidth * 0.1
+            const y = viewBoxHeight - padding - barHeight
+            const isHovered = hoveredBar === d.month
+            const hasData = d.total > 0
+            return (
+              <g key={`bar-${i}`} style={{ cursor: hasData ? 'pointer' : 'default' }} onMouseEnter={() => hasData && setHoveredBar(d.month)} onMouseLeave={() => setHoveredBar(null)}>
+                {/* empty slot outline */}
+                {!hasData && <rect x={x} y={padding} width={barWidth * 0.8} height={viewBoxHeight - 2 * padding} fill="rgba(255,255,255,0.02)" stroke="var(--glass-border)" strokeWidth="0.5" strokeDasharray="4 4" />}
+                {hasData && <rect x={x} y={y} width={barWidth * 0.8} height={barHeight} fill="#10b981" opacity={isHovered ? 1 : 0.75} rx="2" />}
+                {isHovered && hasData && (
+                  <>
+                    <rect x={Math.min(x + barWidth * 0.4 - 55, viewBoxWidth - 120)} y={Math.max(y - 48, 4)} width="110" height="36" fill="rgba(0,0,0,0.85)" rx="4" />
+                    <text x={Math.min(x + barWidth * 0.4, viewBoxWidth - 65)} y={Math.max(y - 30, 22)} textAnchor="middle" fontSize="12" fill="white" fontWeight="600">{monthNames[i]}</text>
+                    <text x={Math.min(x + barWidth * 0.4, viewBoxWidth - 65)} y={Math.max(y - 14, 38)} textAnchor="middle" fontSize="12" fill="white">{d.total.toFixed(2)} PLN</text>
+                  </>
+                )}
+              </g>
+            )
+          })}
+          {fullYear.map((d, i) => <text key={`label-${i}`} x={padding + i * barWidth + barWidth * 0.5} y={viewBoxHeight - padding + 20} textAnchor="middle" fontSize="11" fill="var(--text-tertiary)">{monthNames[i]}</text>)}
+        </svg>
+      )}
     </div>
   )
 }
