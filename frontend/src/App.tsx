@@ -3,6 +3,7 @@ import Dashboard from './components/Dashboard'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
 import { Bonds } from './components/Bonds'
+import { Cash } from './components/Cash'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -10,7 +11,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'stocks' | 'bonds'
+type DashTab = 'stocks' | 'bonds' | 'cash'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -204,6 +205,17 @@ const App: React.FC = () => {
 
           <button
             type="button"
+            className={`nav-tab${dashTab === 'cash' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('cash'); setShowProfile(false) }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM2 9v6a2 2 0 002 2h12a2 2 0 002-2V9H2zm5 2h6a1 1 0 010 2H7a1 1 0 010-2z" />
+            </svg>
+            Cash
+          </button>
+
+          <button
+            type="button"
             className="nav-tab coming-soon"
             disabled
             title="Coming soon"
@@ -307,6 +319,10 @@ const App: React.FC = () => {
         ) : dashTab === 'bonds' ? (
           <div className="max-w-6xl mx-auto">
             <Bonds token={token} />
+          </div>
+        ) : dashTab === 'cash' ? (
+          <div className="max-w-6xl mx-auto">
+            <Cash token={token} />
           </div>
         ) : null}
       </main>

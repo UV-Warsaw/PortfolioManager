@@ -12,6 +12,7 @@ from app.core.database import create_db_and_tables
 from app.routers import (
     auth_router,
     bonds_router,
+    cash_router,
     password_reset_router,
     portfolio_router,
     profile_router,
@@ -84,6 +85,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(bonds_router)
+app.include_router(cash_router)
 app.include_router(password_reset_router)
 app.include_router(portfolio_router)
 app.include_router(profile_router)
