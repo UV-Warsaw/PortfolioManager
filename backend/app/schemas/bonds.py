@@ -12,18 +12,24 @@ class BondValuePoint(BaseModel):
 
     date: str = Field(..., description="ISO format date")
     principal_value: float = Field(..., description="Principal value with interest")
-    total_value: float = Field(..., description="Total value (principal_value * quantity)")
+    total_value: float = Field(
+        ..., description="Total value (principal_value * quantity)"
+    )
 
 
 class BondCreate(BaseModel):
     """Request schema for creating a new bond."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    annual_rate: float = Field(..., ge=0, le=100, description="Annual interest rate as percentage")
+    annual_rate: float = Field(
+        ..., ge=0, le=100, description="Annual interest rate as percentage"
+    )
     years: float = Field(..., gt=0, description="Maturity period in years")
     capitalization: CapitalizationType
     principal: float = Field(..., gt=0, description="Principal/nominal value")
-    redemption_price: float | None = Field(None, gt=0, description="Redemption/sale price")
+    redemption_price: float | None = Field(
+        None, gt=0, description="Redemption/sale price"
+    )
     quantity: int = Field(default=1, ge=1)
     purchase_date: datetime
 
@@ -68,12 +74,19 @@ class BondAnalysisResponse(BaseModel):
     current_total_value: float = Field(
         ..., description="Current total value (per bond * quantity)"
     )
-    sale_value_after_tax: float = Field(..., description="Total redemption value after 19% CGT")
-    redemption_value_after_tax: float = Field(
-        ..., description="Total cash received if redeemed today after 19% capital gains tax"
+    sale_value_after_tax: float = Field(
+        ..., description="Total redemption value after 19% CGT"
     )
-    profit: float = Field(..., description="Gross profit before tax (current value minus invested)")
-    profit_percentage: float = Field(..., description="Gross profit percentage before tax")
+    redemption_value_after_tax: float = Field(
+        ...,
+        description="Total cash received if redeemed today after 19% capital gains tax",
+    )
+    profit: float = Field(
+        ..., description="Gross profit before tax (current value minus invested)"
+    )
+    profit_percentage: float = Field(
+        ..., description="Gross profit percentage before tax"
+    )
     value_projection: list[BondValuePoint] = Field(
         ..., description="Value projection over time"
     )
@@ -85,7 +98,9 @@ class BondsPortfolioSummaryResponse(BaseModel):
     total_invested: float = Field(..., description="Total amount invested in bonds")
     current_total_value: float = Field(..., description="Current portfolio value")
     total_profit: float = Field(..., description="Gross total profit before tax")
-    total_profit_percentage: float = Field(..., description="Gross total profit percentage")
+    total_profit_percentage: float = Field(
+        ..., description="Gross total profit percentage"
+    )
     total_sale_value_after_tax: float = Field(
         ..., description="Total redemption value after 19% capital gains tax"
     )

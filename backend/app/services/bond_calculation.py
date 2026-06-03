@@ -109,7 +109,9 @@ class BondCalculationService:
             days_offset = (total_days * i) // data_points
             current_date = start_date + timedelta(days=days_offset)
 
-            principal_value = BondCalculationService.calculate_value_at_date(bond, current_date)
+            principal_value = BondCalculationService.calculate_value_at_date(
+                bond, current_date
+            )
             total_value = principal_value * bond.quantity
 
             projections.append(
@@ -123,9 +125,7 @@ class BondCalculationService:
         return projections
 
     @staticmethod
-    def calculate_sale_value_after_tax(
-        bond: Bond, current_bond_value: float
-    ) -> float:
+    def calculate_sale_value_after_tax(bond: Bond, current_bond_value: float) -> float:
         """
         Calculate value per bond if redeemed today after 19% capital gains tax.
 
@@ -139,7 +139,9 @@ class BondCalculationService:
         Returns:
             After-tax cash per bond if redeemed now
         """
-        stored_redemption = bond.redemption_price if bond.redemption_price is not None else 0.0
+        stored_redemption = (
+            bond.redemption_price if bond.redemption_price is not None else 0.0
+        )
         redemption_amount = max(stored_redemption, current_bond_value)
 
         profit = redemption_amount - bond.principal
@@ -174,11 +176,7 @@ class BondCalculationService:
 
         # Gross profit before tax: current compound value minus what was paid
         profit = current_total_value - total_invested
-        profit_percentage = (
-            (profit / total_invested) * 100
-            if total_invested > 0
-            else 0
-        )
+        profit_percentage = (profit / total_invested) * 100 if total_invested > 0 else 0
 
         value_projection = BondCalculationService.generate_value_projection(bond)
 
