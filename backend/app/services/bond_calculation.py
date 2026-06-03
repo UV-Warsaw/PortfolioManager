@@ -4,10 +4,13 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from dateutil.relativedelta import relativedelta
-from sqlmodel import Session
 
 from app.models.bonds import Bond, CapitalizationType
-from app.schemas.bonds import BondAnalysisResponse, BondValuePoint, BondsPortfolioSummaryResponse
+from app.schemas.bonds import (
+    BondAnalysisResponse,
+    BondsPortfolioSummaryResponse,
+    BondValuePoint,
+)
 
 
 class BondCalculationService:

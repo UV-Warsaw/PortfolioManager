@@ -54,7 +54,7 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
     repo = TransactionRepository(session)
     accounts = repo.get_account_values()
     total = round(sum(accounts.values()), 2)
-    
+
     # Also calculate cost basis and profit %
     cost_basis = repo.get_cost_basis()
     profit_data = {}
@@ -68,7 +68,7 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
             "profit": profit,
             "profit_percentage": profit_pct,
         }
-    
+
     # For backward compatibility, return simple accounts dict, but add profit data
     response = PortfolioValueResponse(accounts=accounts, total=total)
     response.profit_data = profit_data  # type: ignore

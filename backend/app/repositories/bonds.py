@@ -11,7 +11,7 @@ class BondRepository(BaseRepository[Bond]):
 
     def __init__(self, session: Session) -> None:
         """Initialize bond repository with session.
-        
+
         Args:
             session: Active database session.
         """
