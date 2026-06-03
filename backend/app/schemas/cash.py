@@ -53,12 +53,21 @@ class CashAnalysisResponse(BaseModel):
     account_id: int
     name: str
     balance: float
-    annual_interest: float = Field(..., description="Annual interest earnings")
+    annual_interest: float = Field(..., description="Annual interest earnings (gross)")
     monthly_interest: float = Field(
-        ..., description="Monthly interest earnings (~annual/12)"
+        ..., description="Monthly interest earnings (~annual/12, gross)"
     )
     daily_interest: float = Field(
-        ..., description="Daily interest earnings (~annual/365.25)"
+        ..., description="Daily interest earnings (~annual/365.25, gross)"
+    )
+    annual_interest_after_tax: float = Field(
+        ..., description="Annual interest after 19% capital gains tax"
+    )
+    monthly_interest_after_tax: float = Field(
+        ..., description="Monthly interest after 19% capital gains tax"
+    )
+    daily_interest_after_tax: float = Field(
+        ..., description="Daily interest after 19% capital gains tax"
     )
 
 
@@ -68,6 +77,9 @@ class CashPortfolioSummaryResponse(BaseModel):
     total_balance: float
     total_annual_interest: float
     total_monthly_interest: float
+    total_annual_interest_after_tax: float
+    total_monthly_interest_after_tax: float
     weighted_avg_interest_rate: float
+    weighted_avg_interest_rate_after_tax: float
     accounts_count: int
     accounts_by_type: dict[str, dict]

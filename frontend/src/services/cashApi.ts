@@ -51,13 +51,19 @@ export interface CashAnalysis {
   annual_interest: number
   monthly_interest: number
   daily_interest: number
+  annual_interest_after_tax: number
+  monthly_interest_after_tax: number
+  daily_interest_after_tax: number
 }
 
 export interface CashPortfolioSummary {
   total_balance: number
   total_annual_interest: number
   total_monthly_interest: number
+  total_annual_interest_after_tax: number
+  total_monthly_interest_after_tax: number
   weighted_avg_interest_rate: number
+  weighted_avg_interest_rate_after_tax: number
   accounts_count: number
   accounts_by_type: Record<string, { count: number; total_balance: number }>
 }

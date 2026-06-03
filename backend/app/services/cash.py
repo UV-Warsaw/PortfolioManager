@@ -18,6 +18,8 @@ from app.schemas.cash import (
 class CashService:
     """Service for CashAccount business operations."""
 
+    _TAX_RATE: float = 0.19
+
     def __init__(self, session: Session) -> None:
         """Initialize CashService.
 
@@ -45,12 +47,19 @@ class CashService:
                 "annual_interest": 0.0,
                 "monthly_interest": 0.0,
                 "daily_interest": 0.0,
+                "annual_interest_after_tax": 0.0,
+                "monthly_interest_after_tax": 0.0,
+                "daily_interest_after_tax": 0.0,
             }
+        net = 1 - CashService._TAX_RATE
         annual = balance * rate / 100
         return {
             "annual_interest": round(annual, 2),
             "monthly_interest": round(annual / 12, 2),
             "daily_interest": round(annual / 365.25, 4),
+            "annual_interest_after_tax": round(annual * net, 2),
+            "monthly_interest_after_tax": round(annual / 12 * net, 2),
+            "daily_interest_after_tax": round(annual / 365.25 * net, 4),
         }
 
     def create(self, data: CashCreate) -> CashResponse:
@@ -174,7 +183,10 @@ class CashService:
                 total_balance=0.0,
                 total_annual_interest=0.0,
                 total_monthly_interest=0.0,
+                total_annual_interest_after_tax=0.0,
+                total_monthly_interest_after_tax=0.0,
                 weighted_avg_interest_rate=0.0,
+                weighted_avg_interest_rate_after_tax=0.0,
                 accounts_count=0,
                 accounts_by_type={},
             )
@@ -199,13 +211,16 @@ class CashService:
             by_type[key]["count"] += 1
             by_type[key]["total_balance"] += a.balance
 
+        net = 1 - CashService._TAX_RATE
+        avg_rate = weighted_sum / total_balance if total_balance > 0 else 0.0
         return CashPortfolioSummaryResponse(
             total_balance=round(total_balance, 2),
             total_annual_interest=round(total_annual, 2),
             total_monthly_interest=round(total_monthly, 2),
-            weighted_avg_interest_rate=round(
-                weighted_sum / total_balance if total_balance > 0 else 0.0, 4
-            ),
+            total_annual_interest_after_tax=round(total_annual * net, 2),
+            total_monthly_interest_after_tax=round(total_monthly * net, 2),
+            weighted_avg_interest_rate=round(avg_rate, 4),
+            weighted_avg_interest_rate_after_tax=round(avg_rate * net, 4),
             accounts_count=len(accounts),
             accounts_by_type=by_type,
         )

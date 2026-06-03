@@ -256,25 +256,28 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
               <div style={summaryCardStyle}>
                 <span style={summaryLabelStyle}>Monthly Interest</span>
                 <span style={{ ...summaryValueStyle, color: '#34d399' }}>
-                  +{fmt(summary.total_monthly_interest)} PLN
+                  +{fmt(summary.total_monthly_interest_after_tax)} PLN
                 </span>
                 <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                  ~{fmt(summary.total_monthly_interest / 30, 2)} PLN/day
+                  net of 19% tax · gross {fmt(summary.total_monthly_interest)} PLN
                 </span>
               </div>
               <div style={summaryCardStyle}>
                 <span style={summaryLabelStyle}>Annual Interest</span>
                 <span style={{ ...summaryValueStyle, color: '#34d399' }}>
-                  +{fmt(summary.total_annual_interest)} PLN
+                  +{fmt(summary.total_annual_interest_after_tax)} PLN
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
+                  net of 19% tax · gross {fmt(summary.total_annual_interest)} PLN
                 </span>
               </div>
               <div style={summaryCardStyle}>
                 <span style={summaryLabelStyle}>Weighted Avg Rate</span>
                 <span style={{ ...summaryValueStyle, color: '#fbbf24' }}>
-                  {(summary.weighted_avg_interest_rate).toFixed(2)}%
+                  {(summary.weighted_avg_interest_rate_after_tax).toFixed(2)}%
                 </span>
                 <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
-                  per year
+                  net of 19% tax · gross {summary.weighted_avg_interest_rate.toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -456,10 +459,10 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
                         MONTHLY INTEREST
                       </span>
                       <div style={{ color: '#34d399', fontWeight: '600' }}>
-                        +{fmt(analysis.monthly_interest)} {selectedAccount.currency}
+                        +{fmt(analysis.monthly_interest_after_tax)} {selectedAccount.currency}
                       </div>
                       <div style={{ color: 'var(--text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
-                        ~{fmt(analysis.daily_interest, 2)} {selectedAccount.currency}/day
+                        net of 19% tax · gross {fmt(analysis.monthly_interest)}
                       </div>
                     </div>
                     <div>
@@ -467,7 +470,10 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
                         ANNUAL INTEREST
                       </span>
                       <div style={{ color: '#34d399', fontWeight: '600' }}>
-                        +{fmt(analysis.annual_interest)} {selectedAccount.currency}
+                        +{fmt(analysis.annual_interest_after_tax)} {selectedAccount.currency}
+                      </div>
+                      <div style={{ color: 'var(--text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
+                        net of 19% tax · gross {fmt(analysis.annual_interest)}
                       </div>
                     </div>
                   </div>
