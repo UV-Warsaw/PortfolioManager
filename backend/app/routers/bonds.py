@@ -9,12 +9,12 @@ from app.schemas.bonds import (
     BondAnalysisResponse,
     BondCreate,
     BondResponse,
-    BondUpdate,
     BondsPortfolioSummaryResponse,
+    BondUpdate,
 )
-from app.services.bonds import BondService
-from app.services.bond_calculation import BondCalculationService
 from app.services.auth import get_current_user
+from app.services.bond_calculation import BondCalculationService
+from app.services.bonds import BondService
 
 router = APIRouter(prefix="/portfolio/bonds", tags=["bonds"])
 _bearer = HTTPBearer()
@@ -44,7 +44,7 @@ def create_bond(
         service = BondService(session)
         return service.create_bond(bond_data)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("", response_model=list[BondResponse])
@@ -123,7 +123,7 @@ def update_bond(
             raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
         return bond
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.delete("/{bond_id}", status_code=204)

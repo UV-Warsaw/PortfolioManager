@@ -4,6 +4,7 @@
 
 import axios from 'axios'
 import type { Bond, BondCreate, BondUpdate } from '../types/api'
+export type { Bond }
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 

@@ -278,7 +278,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
           }}
         >
           <BondForm
-            bond={editingBond}
+            bond={editingBond ?? undefined}
             onSubmit={handleCreateBond}
             onCancel={handleCancel}
             isLoading={formLoading}

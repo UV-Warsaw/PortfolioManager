@@ -2,7 +2,7 @@
  * BondForm component for creating and editing bonds.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import type { Bond, BondCreate, BondUpdate } from '../types/api'
 
 interface BondFormProps {
@@ -22,7 +22,7 @@ export const BondForm: React.FC<BondFormProps> = ({
     name: bond?.name ?? '',
     annual_rate: bond?.annual_rate ?? '',
     years: bond?.years ?? '',
-    capitalization: bond?.capitalization ?? 'ANNUAL',
+    capitalization: bond?.capitalization ?? 'Annual',
     principal: bond?.principal ?? '',
     redemption_price: bond?.redemption_price ?? '',
     quantity: bond?.quantity ?? 1,
@@ -51,7 +51,7 @@ export const BondForm: React.FC<BondFormProps> = ({
         name: formData.name,
         annual_rate: parseFloat(formData.annual_rate as string),
         years: parseFloat(formData.years as string),
-        capitalization: formData.capitalization as 'ANNUAL' | 'MONTHLY',
+        capitalization: formData.capitalization as 'Annual' | 'Monthly',
         principal: parseFloat(formData.principal as string),
         redemption_price: formData.redemption_price
           ? parseFloat(formData.redemption_price as string)
@@ -285,8 +285,8 @@ export const BondForm: React.FC<BondFormProps> = ({
             disabled={submitting || isLoading}
             required
           >
-            <option value="ANNUAL">Annual</option>
-            <option value="MONTHLY">Monthly</option>
+            <option value="Annual">Annual</option>
+            <option value="Monthly">Monthly</option>
           </select>
         </div>
 

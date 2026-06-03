@@ -297,7 +297,7 @@ function DividendBarChart({ yearly, token }: { yearly: DividendSummaryResponse[]
               </g>
             )
           })}
-          {fullYear.map((d, i) => <text key={`label-${i}`} x={padding + i * barWidth + barWidth * 0.5} y={viewBoxHeight - padding + 20} textAnchor="middle" fontSize="11" fill="var(--text-tertiary)">{monthNames[i]}</text>)}
+          {fullYear.map((_, i) => <text key={`label-${i}`} x={padding + i * barWidth + barWidth * 0.5} y={viewBoxHeight - padding + 20} textAnchor="middle" fontSize="11" fill="var(--text-tertiary)">{monthNames[i]}</text>)}
         </svg>
       )}
     </div>
