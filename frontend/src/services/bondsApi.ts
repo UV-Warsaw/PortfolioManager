@@ -19,6 +19,7 @@ export interface BondAnalysis {
   current_value_per_bond: number
   current_total_value: number
   sale_value_after_tax: number
+  redemption_value_after_tax: number
   profit: number
   profit_percentage: number
   value_projection: BondValuePoint[]
@@ -30,6 +31,7 @@ export interface BondsPortfolioSummary {
   total_profit: number
   total_profit_percentage: number
   total_sale_value_after_tax: number
+  total_redemption_value_after_tax: number
   bonds_count: number
 }
 

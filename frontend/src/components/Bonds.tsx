@@ -355,22 +355,33 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
                     color: summary.total_profit >= 0 ? '#34d399' : '#f87171',
                   }}
                 >
-                  {summary.total_profit.toLocaleString('en-US', {
+                  {summary.total_profit >= 0 ? '+' : ''}{summary.total_profit.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}{' '}
                   PLN
                 </span>
-              </div>
-              <div style={summaryCardStyle}>
-                <span style={summaryLabelStyle}>Profit %</span>
                 <span
                   style={{
-                    ...summaryValueStyle,
+                    fontSize: '13px',
+                    fontWeight: 600,
                     color: summary.total_profit_percentage >= 0 ? '#34d399' : '#f87171',
                   }}
                 >
-                  {summary.total_profit_percentage.toFixed(2)}%
+                  {summary.total_profit_percentage >= 0 ? '+' : ''}{summary.total_profit_percentage.toFixed(2)}%
+                </span>
+              </div>
+              <div style={summaryCardStyle}>
+                <span style={summaryLabelStyle}>Redemption Value (After Tax)</span>
+                <span style={{ ...summaryValueStyle, color: '#fbbf24' }}>
+                  {summary.total_redemption_value_after_tax.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  PLN
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                  If all bonds redeemed today − 19% CGT
                 </span>
               </div>
             </div>
@@ -541,53 +552,65 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
                         })}{' '}
                         PLN
                       </div>
+                      <div style={{ color: 'var(--text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
+                        {bondAnalysis.current_value_per_bond.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN × {selectedBond.quantity}
+                      </div>
                     </div>
+                    {(() => {
+                      const totalInvested = selectedBond.principal * selectedBond.quantity
+                      const profit = bondAnalysis.current_total_value - totalInvested
+                      const profitPct = totalInvested > 0 ? (profit / totalInvested) * 100 : 0
+                      return (
+                        <div>
+                          <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                            GROSS PROFIT
+                          </span>
+                          <div
+                            style={{
+                              color: profit >= 0 ? '#34d399' : '#f87171',
+                              fontWeight: '600',
+                            }}
+                          >
+                            {profit >= 0 ? '+' : ''}{profit.toLocaleString('en-US', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}{' '}
+                            PLN
+                          </div>
+                          <div style={{ color: profit >= 0 ? '#34d399' : '#f87171', fontSize: '12px', marginTop: '2px' }}>
+                            {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(2)}%
+                          </div>
+                        </div>
+                      )
+                    })()}
                     <div>
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
-                        PROFIT / LOSS
+                        REDEMPTION VALUE (AFTER TAX)
                       </span>
-                      <div
-                        style={{
-                          color:
-                            bondAnalysis.profit >= 0
-                              ? '#34d399'
-                              : '#f87171' || 'var(--text-primary)',
-                          fontWeight: '600',
-                        }}
-                      >
-                        {bondAnalysis.profit.toLocaleString('en-US', {
+                      <div style={{ color: '#fbbf24', fontWeight: '600' }}>
+                        {bondAnalysis.redemption_value_after_tax.toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}{' '}
                         PLN
                       </div>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
-                        PROFIT %
-                      </span>
-                      <div
-                        style={{
-                          color:
-                            bondAnalysis.profit_percentage >= 0
-                              ? '#34d399'
-                              : '#f87171' || 'var(--text-primary)',
-                          fontWeight: '600',
-                        }}
-                      >
-                        {bondAnalysis.profit_percentage.toFixed(2)}%
+                      <div style={{ color: 'var(--text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
+                        Redeem now − 19% CGT on gain
                       </div>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
-                        SALE VALUE (AFTER TAX)
+                        TAX ON GAIN
                       </span>
-                      <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
-                        {bondAnalysis.sale_value_after_tax.toLocaleString('en-US', {
+                      <div style={{ color: '#f87171', fontWeight: '600' }}>
+                        {Math.max(0, bondAnalysis.current_total_value - bondAnalysis.redemption_value_after_tax).toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}{' '}
                         PLN
+                      </div>
+                      <div style={{ color: 'var(--text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
+                        19% of gross profit
                       </div>
                     </div>
                   </div>
