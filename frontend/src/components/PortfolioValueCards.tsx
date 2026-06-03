@@ -12,7 +12,20 @@ function formatPLN(value: number): string {
   return value.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PLN'
 }
 
-function AccountCard({ label, value }: { label: string; value: number }) {
+function AccountCard({
+  label,
+  value,
+  profitData,
+}: {
+  label: string
+  value: number
+  profitData?: {
+    market_value: number
+    cost_basis: number
+    profit: number
+    profit_percentage: number
+  }
+}) {
   return (
     <div
       style={{
@@ -22,7 +35,7 @@ function AccountCard({ label, value }: { label: string; value: number }) {
         padding: '16px 20px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '6px',
+        gap: '8px',
       }}
     >
       <span
@@ -46,6 +59,33 @@ function AccountCard({ label, value }: { label: string; value: number }) {
       >
         {formatPLN(value)}
       </span>
+      {profitData && (
+        <>
+          <span
+            style={{
+              fontSize: '9px',
+              fontWeight: 500,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              color: 'var(--text-tertiary)',
+              marginTop: '4px',
+            }}
+          >
+            Profit
+          </span>
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: profitData.profit_percentage >= 0 ? '#34d399' : '#f87171',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            {profitData.profit_percentage >= 0 ? '+' : ''}{profitData.profit_percentage.toFixed(2)}% (
+            {formatPLN(profitData.profit)})
+          </span>
+        </>
+      )}
     </div>
   )
 }
@@ -107,7 +147,12 @@ export default function PortfolioValueCards({ token, refreshKey = 0 }: Props) {
         }}
       >
         {presentAccounts.map((key) => (
-          <AccountCard key={key} label={key} value={data.accounts[key]} />
+          <AccountCard
+            key={key}
+            label={key}
+            value={data.accounts[key]}
+            profitData={data.profit_data?.[key]}
+          />
         ))}
       </div>
 

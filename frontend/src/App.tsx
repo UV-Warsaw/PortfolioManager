@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import Dashboard from './components/Dashboard'
 import ForgotPasswordForm from './components/ForgotPasswordForm'
 import ImportForm from './components/ImportForm'
+import { Bonds } from './components/Bonds'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -9,7 +10,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'trading'
+type DashTab = 'stocks' | 'bonds'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -19,7 +20,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
-  const [dashTab, setDashTab] = useState<DashTab>('trading')
+  const [dashTab, setDashTab] = useState<DashTab>('stocks')
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
 
@@ -181,13 +182,24 @@ const App: React.FC = () => {
         <nav className="flex items-center gap-1" aria-label="Main navigation">
           <button
             type="button"
-            className={`nav-tab${dashTab === 'trading' && !showProfile ? ' active' : ''}`}
-            onClick={() => { setDashTab('trading'); setShowProfile(false) }}
+            className={`nav-tab${dashTab === 'stocks' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('stocks'); setShowProfile(false) }}
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
             </svg>
-            Trading
+            Stocks
+          </button>
+
+          <button
+            type="button"
+            className={`nav-tab${dashTab === 'bonds' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('bonds'); setShowProfile(false) }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+            </svg>
+            Bonds
           </button>
 
           <button
@@ -266,12 +278,12 @@ const App: React.FC = () => {
               />
             </div>
           </div>
-        ) : dashTab === 'trading' ? (
+        ) : dashTab === 'stocks' ? (
           <div>
             <div className="max-w-6xl mx-auto px-4">
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
-                  Dashboard
+                  Stocks
                 </h2>
                 <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
                   Portfolio overview, gains and dividends
@@ -291,6 +303,10 @@ const App: React.FC = () => {
               </div>
               <ImportForm token={token} onImportSuccess={handleImportSuccess} />
             </div>
+          </div>
+        ) : dashTab === 'bonds' ? (
+          <div className="max-w-6xl mx-auto">
+            <Bonds token={token} />
           </div>
         ) : null}
       </main>

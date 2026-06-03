@@ -46,6 +46,7 @@ class PortfolioValueResponse(BaseModel):
 
     accounts: dict[str, float]
     total: float
+    profit_data: dict[str, dict[str, float]] | None = None
 
 
 class TopHoldingItem(BaseModel):

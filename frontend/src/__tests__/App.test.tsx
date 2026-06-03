@@ -58,14 +58,14 @@ describe('App', () => {
   })
 
   describe('authenticated', () => {
-    it('renders the app shell with Trading tab after token is validated', async () => {
+    it('renders the app shell with Stocks tab after token is validated', async () => {
       vi.mocked(getMe).mockResolvedValueOnce({ id: 1, email: 'trader@example.com' })
       localStorage.setItem('access_token', 'valid-token')
 
       render(<App />)
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Trading/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /Stocks/i })).toBeInTheDocument()
       })
       expect(screen.getByTestId('import-form')).toBeInTheDocument()
     })

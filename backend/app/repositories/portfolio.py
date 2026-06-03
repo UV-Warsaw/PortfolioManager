@@ -178,6 +178,33 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[0] is not None and row[1] is not None
         }
 
+    def get_cost_basis(self) -> dict[str, float]:
+        """Return cost basis per account — sum of price * quantity for BUY transactions.
+
+        Cost basis represents the total amount invested in open positions.
+
+        Returns:
+            Dict mapping account name to cost basis (PLN).
+        """
+        cost_val = func.sum(Transaction.price * Transaction.quantity).label("cost")
+
+        stmt = (
+            select(Transaction.account, cost_val)
+            .where(
+                Transaction.price.is_not(None),
+                Transaction.quantity.is_not(None),
+                Transaction.ticker.is_not(None),
+                Transaction.type == "BUY",
+            )
+            .group_by(Transaction.account)
+        )
+        rows = self.session.exec(stmt).all()
+        return {
+            row[0]: round(float(row[1]), 2)
+            for row in rows
+            if row[0] is not None and row[1] is not None
+        }
+
     def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
         """Return the top N holdings by current market value across all accounts.
 

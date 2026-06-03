@@ -3,6 +3,12 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 export interface PortfolioValueResponse {
   accounts: Record<string, number>
   total: number
+  profit_data?: Record<string, {
+    market_value: number
+    cost_basis: number
+    profit: number
+    profit_percentage: number
+  }>
 }
 
 export async function getPortfolioValue(token: string): Promise<PortfolioValueResponse> {
