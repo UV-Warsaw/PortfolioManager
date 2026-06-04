@@ -16,6 +16,7 @@ from app.schemas.portfolio import (
     RiskAssessmentResponse,
     WealthSummaryResponse,
 )
+from app.repositories.user import UserRepository
 from app.services.auth import get_current_user
 from app.services.summary import SummaryService
 
@@ -162,10 +163,9 @@ def get_risk_assessment(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
-
-    current_user: User = get_current_user(credentials, session)
-    user_preference: str = getattr(current_user, "risk_level", "moderate") or "moderate"
+    current_user_info: dict = get_current_user(credentials, session)
+    user = UserRepository(session).get_by_id(current_user_info["id"])
+    user_preference: str = getattr(user, "risk_level", None) or "moderate"
     service = SummaryService(session)
     return service.get_risk_assessment(user_preference)
 
@@ -217,9 +217,8 @@ def get_emergency_fund(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
-
-    current_user: User = get_current_user(credentials, session)
-    monthly_expenses = getattr(current_user, "monthly_expenses", 0.0) or 0.0
+    current_user_info: dict = get_current_user(credentials, session)
+    user = UserRepository(session).get_by_id(current_user_info["id"])
+    monthly_expenses: float = getattr(user, "monthly_expenses", None) or 0.0
     service = SummaryService(session)
     return service.get_emergency_fund(monthly_expenses)
