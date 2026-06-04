@@ -166,7 +166,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
       current_value: val,
       currency: isCrypto ? 'PLN' : currency,
       quantity: isCrypto ? parseFloat(quantity) : null,
-      purchase_price: isCrypto ? parseFloat(purchasePrice) : null,
+      purchase_price: isCrypto ? Math.round(parseFloat(purchasePrice) * 3.5 * 100) / 100 : null,
       mortgage_remaining: isRealEstate ? mortgage : null,
       notes: notes.trim() || null,
     })
@@ -353,13 +353,13 @@ export const AssetForm: React.FC<AssetFormProps> = ({
               />
             </div>
             <div>
-              <label style={labelStyle}>Purchase Price / Unit *</label>
+              <label style={labelStyle}>Purchase Price / Unit (USD) *</label>
               <input
                 style={inputStyle}
                 type="number"
                 value={purchasePrice}
                 onChange={(e) => setPurchasePrice(e.target.value)}
-                placeholder="Cost per unit in PLN"
+                placeholder="Cost per unit in USD"
                 min={0}
                 step="any"
                 required
@@ -382,7 +382,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                   const qty = parseFloat(quantity)
                   const pp = parseFloat(purchasePrice)
                   const totalVal = qty * livePricePLN
-                  const totalCost = !isNaN(pp) && purchasePrice ? qty * pp : null
+                  const totalCost = !isNaN(pp) && purchasePrice ? qty * (pp * 3.5) : null
                   const profit = totalCost !== null ? totalVal - totalCost : null
                   const pct = totalCost && totalCost > 0 && profit !== null ? (profit / totalCost) * 100 : null
                   return (
