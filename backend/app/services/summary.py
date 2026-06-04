@@ -109,17 +109,20 @@ class SummaryService:
         Returns:
             WealthSummaryResponse with total value and per-class breakdown.
         """
+        from app.repositories.bonds import BondRepository
         from app.services.assets import OtherAssetService
-        from app.services.bonds import BondService
+        from app.services.bond_calculation import BondCalculationService
         from app.services.cash import CashService
 
         # Stocks
         accounts = self.tx_repo.get_account_values()
         stocks_value = round(sum(accounts.values()), 2)
 
-        # Bonds
-        bond_svc = BondService(self.session)
-        bonds_value = round(bond_svc.get_total_value(), 2)
+        # Bonds — use proper compound-interest calculation
+        bond_repo = BondRepository(self.session)
+        bonds = bond_repo.list_all()
+        bonds_summary = BondCalculationService.calculate_portfolio_summary(bonds)
+        bonds_value = bonds_summary.current_total_value
 
         # Cash
         cash_svc = CashService(self.session)
