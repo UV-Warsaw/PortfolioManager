@@ -115,3 +115,28 @@ class WealthSummaryResponse(BaseModel):
     total_value: float
     breakdown: list[AssetClassValue]
     has_data: bool
+
+
+class RiskAssessmentResponse(BaseModel):
+    """Portfolio risk level compared against the user's declared risk preference."""
+
+    portfolio_risk: str
+    """Computed portfolio risk: 'conservative' | 'moderate' | 'aggressive'."""
+
+    user_preference: str
+    """User's declared risk preference from their profile."""
+
+    is_aligned: bool
+    """True when portfolio_risk matches user_preference."""
+
+    high_pct: float
+    """Share of high-risk assets (Stocks + Crypto), 0–100."""
+
+    medium_pct: float
+    """Share of medium-risk assets (Real Estate), 0–100."""
+
+    low_pct: float
+    """Share of low-risk assets (Bonds + Cash), 0–100."""
+
+    has_data: bool
+    """False when the portfolio is empty (no assets)."""
