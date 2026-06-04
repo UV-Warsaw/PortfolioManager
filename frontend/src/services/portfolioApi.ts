@@ -159,3 +159,91 @@ export async function getRiskAssessment(token: string): Promise<RiskAssessment> 
   }
   return res.json() as Promise<RiskAssessment>
 }
+
+export interface DiversificationRecommendation {
+  asset_class: string
+  percentage: number
+  problem: string
+  action: string
+  link_to: string
+}
+
+export interface DiversificationResponse {
+  recommendations: DiversificationRecommendation[]
+  is_diversified: boolean
+  has_data: boolean
+}
+
+export async function getDiversificationRecommendations(
+  token: string,
+): Promise<DiversificationResponse> {
+  const res = await fetch(`${API_URL}/summary/diversification`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch diversification recommendations: ${res.status}`)
+  }
+  return res.json() as Promise<DiversificationResponse>
+}
+
+export interface EmergencyFundResponse {
+  cash_value: number
+  bonds_value: number
+  emergency_fund: number
+  monthly_expenses: number
+  months_covered: number
+  status: 'critical' | 'good' | 'excellent'
+  has_data: boolean
+}
+
+export async function getEmergencyFund(token: string): Promise<EmergencyFundResponse> {
+  const res = await fetch(`${API_URL}/summary/emergency-fund`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch emergency fund data: ${res.status}`)
+  }
+  return res.json() as Promise<EmergencyFundResponse>
+}
+
+export interface CryptoPricesResponse {
+  BTC: number
+  ETH: number
+  currency: string
+}
+
+export async function getCryptoPrices(
+  token: string,
+  currency = 'PLN',
+): Promise<CryptoPricesResponse> {
+  const res = await fetch(`${API_URL}/summary/crypto-prices?currency=${currency}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch crypto prices: ${res.status}`)
+  }
+  return res.json() as Promise<CryptoPricesResponse>
+}
+
+const USD_TO_PLN = 3.5
+const CRYPTO_CACHE_KEY = 'crypto_prices_usd'
+
+export interface CryptoPricesPLN {
+  BTC: number
+  ETH: number
+}
+
+/**
+ * Fetch BTC/ETH prices in PLN (USD × 3.5), cached in sessionStorage for the
+ * lifetime of the browser session so only one upstream request is made.
+ */
+export async function getCryptoPricesPLN(token: string): Promise<CryptoPricesPLN> {
+  const cached = sessionStorage.getItem(CRYPTO_CACHE_KEY)
+  if (cached) {
+    const usd = JSON.parse(cached) as { BTC: number; ETH: number }
+    return { BTC: usd.BTC * USD_TO_PLN, ETH: usd.ETH * USD_TO_PLN }
+  }
+  const prices = await getCryptoPrices(token, 'USD')
+  sessionStorage.setItem(CRYPTO_CACHE_KEY, JSON.stringify({ BTC: prices.BTC, ETH: prices.ETH }))
+  return { BTC: prices.BTC * USD_TO_PLN, ETH: prices.ETH * USD_TO_PLN }
+}

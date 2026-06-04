@@ -11,6 +11,7 @@ import {
 interface Props {
   onBack: () => void
   onEmailChanged: (newEmail: string) => void
+  onProfileUpdated?: () => void
 }
 
 type Section = 'settings' | 'email' | 'password'
@@ -29,7 +30,7 @@ const labelClass =
 
 const RISK_LEVELS = ['conservative', 'moderate', 'aggressive'] as const
 
-const ProfileForm: React.FC<Props> = ({ onBack, onEmailChanged }) => {
+const ProfileForm: React.FC<Props> = ({ onBack, onEmailChanged, onProfileUpdated }) => {
   const [profile, setProfile] = useState<ProfileResponse | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState<Section>('settings')
@@ -88,6 +89,7 @@ const ProfileForm: React.FC<Props> = ({ onBack, onEmailChanged }) => {
       })
       setProfile(result.profile)
       setSettingsSuccess('Settings saved.')
+      onProfileUpdated?.()
     } catch (err) {
       setSettingsError(
         err instanceof ProfileApiError ? err.message : 'Failed to save settings.',

@@ -140,3 +140,73 @@ class RiskAssessmentResponse(BaseModel):
 
     has_data: bool
     """False when the portfolio is empty (no assets)."""
+
+
+class DiversificationRecommendation(BaseModel):
+    """A single concentration-based diversification recommendation."""
+
+    asset_class: str
+    """Asset class name, e.g. 'Stocks'."""
+
+    percentage: float
+    """Current share of this asset class in the portfolio (0–100)."""
+
+    problem: str
+    """Human-readable description of the concentration issue."""
+
+    action: str
+    """Suggested action to reduce concentration."""
+
+    link_to: str
+    """Frontend tab key the user can navigate to, e.g. 'stocks'."""
+
+
+class DiversificationResponse(BaseModel):
+    """Concentration analysis and diversification recommendations."""
+
+    recommendations: list[DiversificationRecommendation]
+    """Up to three recommendations, ordered by concentration severity."""
+
+    is_diversified: bool
+    """True when no asset class exceeds the concentration threshold."""
+
+    has_data: bool
+    """False when the portfolio is empty (no assets)."""
+
+
+class EmergencyFundResponse(BaseModel):
+    """Emergency fund adequacy — cash + bonds vs monthly expenses."""
+
+    cash_value: float
+    """Current cash holdings value in PLN."""
+
+    bonds_value: float
+    """Current bonds holdings value in PLN."""
+
+    emergency_fund: float
+    """Total emergency fund (cash + bonds) in PLN."""
+
+    monthly_expenses: float
+    """User's declared monthly living expenses in PLN."""
+
+    months_covered: float
+    """How many months of expenses the emergency fund covers (0 if expenses unknown)."""
+
+    status: str
+    """'critical' (<3 months) | 'good' (3–6 months) | 'excellent' (>6 months)."""
+
+    has_data: bool
+    """False when the portfolio is empty (no assets)."""
+
+
+class CryptoPricesResponse(BaseModel):
+    """Live BTC and ETH prices from CoinGecko."""
+
+    BTC: float
+    """Current BTC price in the requested currency."""
+
+    ETH: float
+    """Current ETH price in the requested currency."""
+
+    currency: str
+    """Currency the prices are denominated in (e.g. 'PLN')."""

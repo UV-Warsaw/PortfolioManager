@@ -242,6 +242,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
               onSubmit={handleSubmit}
               onCancel={() => { setFormSection(null); setEditingAsset(null) }}
               isLoading={saving}
+              token={token}
             />
           </div>
         )}
@@ -415,6 +416,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
               onSubmit={handleSubmit}
               onCancel={() => { setFormSection(null); setEditingAsset(null) }}
               isLoading={saving}
+              token={token}
             />
           </div>
         )}
