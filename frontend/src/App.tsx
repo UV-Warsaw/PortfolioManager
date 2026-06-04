@@ -12,7 +12,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'stocks' | 'bonds' | 'cash' | 'crypto'
+type DashTab = 'stocks' | 'bonds' | 'cash' | 'crypto' | 'real-estate'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -225,6 +225,17 @@ const App: React.FC = () => {
             </svg>
             Crypto
           </button>
+
+          <button
+            type="button"
+            className={`nav-tab${dashTab === 'real-estate' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('real-estate'); setShowProfile(false) }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            Real Estate
+          </button>
         </nav>
 
         {/* User section */}
@@ -325,7 +336,11 @@ const App: React.FC = () => {
           </div>
         ) : dashTab === 'crypto' ? (
           <div className="max-w-6xl mx-auto">
-            <OtherAssets token={token} />
+            <OtherAssets token={token} section="crypto" />
+          </div>
+        ) : dashTab === 'real-estate' ? (
+          <div className="max-w-6xl mx-auto">
+            <OtherAssets token={token} section="real-estate" />
           </div>
         ) : null}
       </main>

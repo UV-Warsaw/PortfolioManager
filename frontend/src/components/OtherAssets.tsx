@@ -21,6 +21,7 @@ import { AssetForm } from './AssetForm'
 
 interface Props {
   token: string
+  section: 'crypto' | 'real-estate'
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ const StatCard: React.FC<{
 
 // ─── main component ───────────────────────────────────────────────────────────
 
-export const OtherAssets: React.FC<Props> = ({ token }) => {
+export const OtherAssets: React.FC<Props> = ({ token, section }) => {
   const [assets, setAssets] = useState<OtherAsset[]>([])
   const [summary, setSummary] = useState<OtherAssetsPortfolioSummary | null>(null)
   const [analysisMap, setAnalysisMap] = useState<Record<number, OtherAssetAnalysis>>({})
@@ -217,7 +218,7 @@ export const OtherAssets: React.FC<Props> = ({ token }) => {
       )}
 
       {/* ── CRYPTO SECTION ── */}
-      <section style={{ marginBottom: '40px' }}>
+      {section === 'crypto' && <section style={{ marginBottom: '40px' }}>
         <SectionHeader
           title="Cryptocurrency"
           subtitle="Bitcoin and Ethereum holdings"
@@ -362,10 +363,10 @@ export const OtherAssets: React.FC<Props> = ({ token }) => {
             )
           })}
         </div>
-      </section>
+      </section>}
 
       {/* ── REAL ESTATE SECTION ── */}
-      <section>
+      {section === 'real-estate' && <section>
         <SectionHeader
           title="Real Estate"
           subtitle="Properties and mortgage tracking"
@@ -501,7 +502,7 @@ export const OtherAssets: React.FC<Props> = ({ token }) => {
             )
           })}
         </div>
-      </section>
+      </section>}
     </div>
   )
 }
