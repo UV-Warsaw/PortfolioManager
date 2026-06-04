@@ -10,6 +10,7 @@ from app.schemas.portfolio import (
     AssetClassValue,
     DividendSummaryResponse,
     DividendTimelineResponse,
+    RiskAssessmentResponse,
     WealthSummaryResponse,
 )
 
@@ -168,4 +169,60 @@ class SummaryService:
             total_value=round(total, 2),
             breakdown=breakdown,
             has_data=total > 0,
+        )
+
+    def get_risk_assessment(self, user_preference: str) -> RiskAssessmentResponse:
+        """Assess portfolio risk level and compare against the user's declared preference.
+
+        Risk classification:
+          - Crypto                  → high risk
+          - Stocks + Real Estate   → medium risk
+          - Bonds + Cash           → low risk
+
+        Portfolio risk label:
+          - aggressive   : high_pct >  50 %
+          - conservative : low_pct  >= 60 %
+          - moderate     : otherwise
+
+        Args:
+            user_preference: The declared risk preference stored on the User record.
+
+        Returns:
+            RiskAssessmentResponse with computed risk, preference, and alignment flag.
+        """
+        wealth = self.get_wealth_summary()
+
+        if not wealth.has_data:
+            return RiskAssessmentResponse(
+                portfolio_risk="moderate",
+                user_preference=user_preference,
+                is_aligned=user_preference == "moderate",
+                high_pct=0.0,
+                medium_pct=0.0,
+                low_pct=0.0,
+                has_data=False,
+            )
+
+        by_name = {item.name: item.percentage for item in wealth.breakdown}
+        high_pct = round(by_name.get("Crypto", 0.0), 2)
+        medium_pct = round(
+            by_name.get("Stocks", 0.0) + by_name.get("Real Estate", 0.0), 2
+        )
+        low_pct = round(by_name.get("Bonds", 0.0) + by_name.get("Cash", 0.0), 2)
+
+        if high_pct > 50.0:
+            portfolio_risk = "aggressive"
+        elif low_pct >= 60.0:
+            portfolio_risk = "conservative"
+        else:
+            portfolio_risk = "moderate"
+
+        return RiskAssessmentResponse(
+            portfolio_risk=portfolio_risk,
+            user_preference=user_preference,
+            is_aligned=portfolio_risk == user_preference,
+            high_pct=high_pct,
+            medium_pct=medium_pct,
+            low_pct=low_pct,
+            has_data=True,
         )
