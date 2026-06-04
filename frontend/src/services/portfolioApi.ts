@@ -185,3 +185,23 @@ export async function getDiversificationRecommendations(
   }
   return res.json() as Promise<DiversificationResponse>
 }
+
+export interface EmergencyFundResponse {
+  cash_value: number
+  bonds_value: number
+  emergency_fund: number
+  monthly_expenses: number
+  months_covered: number
+  status: 'critical' | 'good' | 'excellent'
+  has_data: boolean
+}
+
+export async function getEmergencyFund(token: string): Promise<EmergencyFundResponse> {
+  const res = await fetch(`${API_URL}/summary/emergency-fund`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch emergency fund data: ${res.status}`)
+  }
+  return res.json() as Promise<EmergencyFundResponse>
+}
