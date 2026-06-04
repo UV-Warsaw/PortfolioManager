@@ -12,6 +12,7 @@ from app.schemas.portfolio import (
     DiversificationResponse,
     DividendSummaryResponse,
     DividendTimelineResponse,
+    EmergencyFundResponse,
     RiskAssessmentResponse,
     WealthSummaryResponse,
 )
@@ -301,5 +302,62 @@ class SummaryService:
         return DiversificationResponse(
             recommendations=recs,
             is_diversified=len(recs) == 0,
+            has_data=True,
+        )
+
+    def get_emergency_fund(self, monthly_expenses: float) -> EmergencyFundResponse:
+        """Evaluate emergency fund adequacy (cash + bonds vs monthly expenses).
+
+        Thresholds:
+          - < 3 months  → 'critical'
+          - 3 – 6 months → 'good'
+          - > 6 months  → 'excellent'
+
+        When monthly_expenses is 0 the months_covered cannot be determined;
+        status defaults to 'good' and months_covered to 0.
+
+        Args:
+            monthly_expenses: User's declared monthly living expenses in PLN.
+
+        Returns:
+            EmergencyFundResponse with values, months covered, and status.
+        """
+        wealth = self.get_wealth_summary()
+
+        if not wealth.has_data:
+            return EmergencyFundResponse(
+                cash_value=0.0,
+                bonds_value=0.0,
+                emergency_fund=0.0,
+                monthly_expenses=monthly_expenses,
+                months_covered=0.0,
+                status="critical",
+                has_data=False,
+            )
+
+        by_name = {item.name: item.value for item in wealth.breakdown}
+        cash_value = round(by_name.get("Cash", 0.0), 2)
+        bonds_value = round(by_name.get("Bonds", 0.0), 2)
+        emergency_fund = round(cash_value + bonds_value, 2)
+
+        if monthly_expenses > 0:
+            months_covered = round(emergency_fund / monthly_expenses, 1)
+            if months_covered < 3:
+                status = "critical"
+            elif months_covered <= 6:
+                status = "good"
+            else:
+                status = "excellent"
+        else:
+            months_covered = 0.0
+            status = "good"
+
+        return EmergencyFundResponse(
+            cash_value=cash_value,
+            bonds_value=bonds_value,
+            emergency_fund=emergency_fund,
+            monthly_expenses=monthly_expenses,
+            months_covered=months_covered,
+            status=status,
             has_data=True,
         )
