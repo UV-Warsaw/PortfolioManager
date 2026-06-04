@@ -29,6 +29,7 @@ const App: React.FC = () => {
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
   const [navOpen, setNavOpen] = useState(false)
+  const [profileVersion, setProfileVersion] = useState(0)
 
   const handleImportSuccess = useCallback(() => {
     setPortfolioRefreshKey((k) => k + 1)
@@ -388,6 +389,7 @@ const App: React.FC = () => {
               <ProfileForm
                 onBack={() => setShowProfile(false)}
                 onEmailChanged={(email) => setCurrentEmail(email)}
+                onProfileUpdated={() => setProfileVersion((v) => v + 1)}
               />
             </div>
           </div>
@@ -402,7 +404,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <WealthOverview token={token} />
-            <RiskCard token={token} />
+            <RiskCard token={token} refreshKey={profileVersion} />
             <DiversificationCard token={token} onNavigate={(tab) => setDashTab(tab as DashTab)} />
           </div>
         ) : dashTab === 'stocks' ? (
