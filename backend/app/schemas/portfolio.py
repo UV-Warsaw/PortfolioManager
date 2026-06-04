@@ -140,3 +140,35 @@ class RiskAssessmentResponse(BaseModel):
 
     has_data: bool
     """False when the portfolio is empty (no assets)."""
+
+
+class DiversificationRecommendation(BaseModel):
+    """A single concentration-based diversification recommendation."""
+
+    asset_class: str
+    """Asset class name, e.g. 'Stocks'."""
+
+    percentage: float
+    """Current share of this asset class in the portfolio (0–100)."""
+
+    problem: str
+    """Human-readable description of the concentration issue."""
+
+    action: str
+    """Suggested action to reduce concentration."""
+
+    link_to: str
+    """Frontend tab key the user can navigate to, e.g. 'stocks'."""
+
+
+class DiversificationResponse(BaseModel):
+    """Concentration analysis and diversification recommendations."""
+
+    recommendations: list[DiversificationRecommendation]
+    """Up to three recommendations, ordered by concentration severity."""
+
+    is_diversified: bool
+    """True when no asset class exceeds the concentration threshold."""
+
+    has_data: bool
+    """False when the portfolio is empty (no assets)."""
