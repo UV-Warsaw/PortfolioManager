@@ -49,6 +49,7 @@ export interface OtherAssetAnalysis {
   name: string
   asset_class: OtherAssetClass
   current_value: number
+  market_value: number
   currency: string
   total_cost: number | null
   profit: number | null

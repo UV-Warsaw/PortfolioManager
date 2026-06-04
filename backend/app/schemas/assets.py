@@ -62,6 +62,9 @@ class OtherAssetAnalysisResponse(BaseModel):
     name: str
     asset_class: OtherAssetClass
     current_value: float
+    market_value: float = Field(
+        description="Actual holding value (quantity × price for crypto)"
+    )
     currency: str
     total_cost: float | None = Field(
         None, description="Total purchase cost (quantity × purchase_price)"

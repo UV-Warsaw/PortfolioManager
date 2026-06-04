@@ -232,21 +232,33 @@ export const AssetForm: React.FC<AssetFormProps> = ({
         {/* Current value */}
         <div style={{ gridColumn: '1 / -1' }}>
           <label style={labelStyle}>
-            {isRealEstate ? 'Property Value *' : 'Current Value *'}
+            {isCrypto ? 'Price per Unit *' : isRealEstate ? 'Property Value *' : 'Current Value *'}
           </label>
           <input
             style={inputStyle}
             type="number"
             value={currentValue}
             onChange={(e) => setCurrentValue(e.target.value)}
-            placeholder={isRealEstate ? 'Market value of the property' : 'Total current market value'}
+            placeholder={
+              isCrypto
+                ? 'Current market price per coin'
+                : isRealEstate
+                ? 'Market value of the property'
+                : 'Total current market value'
+            }
             min={0}
             step="any"
             required
           />
-          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
-            No automatic pricing — update manually when value changes
-          </span>
+          {isCrypto ? (
+            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
+              Enter the current price per coin — update manually when price changes
+            </span>
+          ) : (
+            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
+              No automatic pricing — update manually when value changes
+            </span>
+          )}
         </div>
 
         {/* Crypto-only: quantity + purchase price */}
@@ -276,6 +288,44 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 step="any"
               />
             </div>
+            {/* Live preview of total value and P&L */}
+            {quantity && currentValue && (
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  background: 'rgba(99,102,241,0.07)',
+                  border: '1px solid rgba(99,102,241,0.2)',
+                  fontSize: '13px',
+                }}
+              >
+                {(() => {
+                  const qty = parseFloat(quantity)
+                  const price = parseFloat(currentValue)
+                  const pp = parseFloat(purchasePrice)
+                  const totalVal = qty * price
+                  const totalCost = !isNaN(pp) && purchasePrice ? qty * pp : null
+                  const profit = totalCost !== null ? totalVal - totalCost : null
+                  const pct = totalCost && totalCost > 0 && profit !== null ? (profit / totalCost) * 100 : null
+                  return (
+                    <>
+                      <div style={{ color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                        Total holding value: <strong style={{ color: 'var(--text-primary)' }}>
+                          {totalVal.toLocaleString('pl-PL', { maximumFractionDigits: 2 })} {currency}
+                        </strong>
+                      </div>
+                      {profit !== null && (
+                        <div style={{ color: profit >= 0 ? '#34d399' : '#f87171' }}>
+                          P&L: {profit >= 0 ? '+' : ''}{profit.toLocaleString('pl-PL', { maximumFractionDigits: 2 })}
+                          {pct !== null && ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)`}
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+            )}
           </>
         )}
 

@@ -26,9 +26,6 @@ interface Props {
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (n: number, currency = 'PLN') =>
-  new Intl.NumberFormat('pl-PL', { style: 'currency', currency }).format(n)
-
 const fmtSimple = (n: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(n)
 
@@ -189,7 +186,11 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
   )
   const totalNetEquity = totalPropertyValue - totalMortgage
 
-  const totalCryptoValue = cryptoAssets.reduce((acc, a) => acc + a.current_value, 0)
+  // Total crypto = sum of market_values (qty × price), falling back to raw current_value
+  const totalCryptoValue = cryptoAssets.reduce((acc, a) => {
+    const an = analysisMap[a.id]
+    return acc + (an?.market_value ?? (a.quantity != null ? a.quantity * a.current_value : a.current_value))
+  }, 0)
 
   if (loading) {
     return (
@@ -238,17 +239,18 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
           </div>
         )}
 
-        {/* Crypto summary card */}
+        {/* Crypto summary cards */}
         {cryptoAssets.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-            <StatCard label="Total Crypto Value" value={fmtSimple(totalCryptoValue) + ' PLN'} />
+            <StatCard label="Total Holdings" value={fmtSimple(totalCryptoValue) + ' PLN'} />
             {cryptoAssets.map((a) => {
               const an = analysisMap[a.id]
+              const holdingVal = an?.market_value ?? (a.quantity != null ? a.quantity * a.current_value : a.current_value)
               return (
                 <StatCard
                   key={a.id}
-                  label={a.name}
-                  value={fmt(a.current_value, a.currency)}
+                  label={`${a.name}${a.quantity != null ? ` · ${a.quantity}` : ''}`}
+                  value={fmtSimple(holdingVal) + ' ' + a.currency}
                   valueColor={an?.profit != null ? profitColor(an.profit) : undefined}
                 />
               )
@@ -275,6 +277,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {cryptoAssets.map((a) => {
             const an = analysisMap[a.id]
+            const holdingVal = an?.market_value ?? (a.quantity != null ? a.quantity * a.current_value : a.current_value)
             const isSelected = selectedId === a.id
             return (
               <div
@@ -288,46 +291,62 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
                 }}
                 onClick={() => setSelectedId(isSelected ? null : a.id)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
                       {a.name}
                     </span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginLeft: '8px' }}>
-                      {a.currency}
-                    </span>
+                    {a.quantity != null && (
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {a.quantity} {a.name} @ {fmtSimple(a.current_value)} {a.currency}
+                      </div>
+                    )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      {fmt(a.current_value, a.currency)}
+                      {fmtSimple(holdingVal)} {a.currency}
                     </div>
                     {an?.profit != null && (
                       <div style={{ fontSize: '12px', color: profitColor(an.profit) }}>
                         {an.profit >= 0 ? '+' : ''}{fmtSimple(an.profit)}{' '}
-                        {an.profit_pct != null && `(${an.profit_pct >= 0 ? '+' : ''}${an.profit_pct.toFixed(1)}%)`}
+                        {an.profit_pct != null && `(${an.profit_pct >= 0 ? '+' : ''}${an.profit_pct.toFixed(2)}%)`}
                       </div>
                     )}
                   </div>
                 </div>
 
                 {isSelected && (
-                  <div style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '14px' }}>
+                  <div style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     {a.quantity != null && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Quantity: <strong style={{ color: 'var(--text-primary)' }}>{a.quantity}</strong>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        Quantity: <strong style={{ color: 'var(--text-primary)' }}>{a.quantity} {a.name}</strong>
                       </div>
                     )}
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      Price/unit: <strong style={{ color: 'var(--text-primary)' }}>{fmtSimple(a.current_value)} {a.currency}</strong>
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      Holding value: <strong style={{ color: 'var(--text-primary)' }}>{fmtSimple(holdingVal)} {a.currency}</strong>
+                    </div>
                     {an?.total_cost != null && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Total Cost: <strong style={{ color: 'var(--text-primary)' }}>{fmtSimple(an.total_cost)}</strong>
+                      <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        Total cost: <strong style={{ color: 'var(--text-primary)' }}>{fmtSimple(an.total_cost)} {a.currency}</strong>
+                      </div>
+                    )}
+                    {an?.profit != null && (
+                      <div style={{ fontSize: '13px', gridColumn: '1 / -1' }}>
+                        P&amp;L: <strong style={{ color: profitColor(an.profit) }}>
+                          {an.profit >= 0 ? '+' : ''}{fmtSimple(an.profit)} {a.currency}
+                          {an.profit_pct != null && ` (${an.profit_pct >= 0 ? '+' : ''}${an.profit_pct.toFixed(2)}%)`}
+                        </strong>
                       </div>
                     )}
                     {a.notes && (
-                      <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', gridColumn: '1 / -1' }}>
                         {a.notes}
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px', gridColumn: '1 / -1' }}>
                       <button
                         onClick={(e) => { e.stopPropagation(); setEditingAsset(a); setFormSection('Crypto') }}
                         style={{

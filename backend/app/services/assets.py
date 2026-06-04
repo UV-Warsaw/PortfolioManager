@@ -44,8 +44,9 @@ class OtherAssetService:
         """
         if quantity is None or purchase_price is None:
             return {"total_cost": None, "profit": None, "profit_pct": None}
+        market_value = round(quantity * current_value, 2)
         total_cost = round(quantity * purchase_price, 2)
-        profit = round(current_value - total_cost, 2)
+        profit = round(market_value - total_cost, 2)
         profit_pct = round((profit / total_cost * 100), 2) if total_cost > 0 else None
         return {"total_cost": total_cost, "profit": profit, "profit_pct": profit_pct}
 
@@ -153,6 +154,12 @@ class OtherAssetService:
         pnl = self._calculate_pnl(
             asset.current_value, asset.quantity, asset.purchase_price
         )
+        # For crypto (quantity-based), the actual holding value is qty × price-per-unit
+        market_value = (
+            round(asset.quantity * asset.current_value, 2)
+            if asset.quantity is not None
+            else asset.current_value
+        )
         net_equity = None
         if asset.asset_class == OtherAssetClass.REAL_ESTATE:
             net_equity = round(
@@ -163,6 +170,7 @@ class OtherAssetService:
             name=asset.name,
             asset_class=asset.asset_class,
             current_value=asset.current_value,
+            market_value=market_value,
             currency=asset.currency,
             net_equity=net_equity,
             **pnl,
@@ -192,7 +200,13 @@ class OtherAssetService:
         by_class: dict[str, dict] = {}
 
         for a in assets:
-            total_value += a.current_value
+            # For crypto, actual value = qty × price-per-unit; for others, raw current_value
+            asset_value = (
+                round(a.quantity * a.current_value, 2)
+                if a.quantity is not None
+                else a.current_value
+            )
+            total_value += asset_value
             pnl = self._calculate_pnl(a.current_value, a.quantity, a.purchase_price)
             if pnl["total_cost"] is not None:
                 total_cost += pnl["total_cost"]
@@ -204,7 +218,7 @@ class OtherAssetService:
                 by_class[key] = {"count": 0, "total_value": 0.0}
             by_class[key]["count"] += 1
             by_class[key]["total_value"] = round(
-                by_class[key]["total_value"] + a.current_value, 2
+                by_class[key]["total_value"] + asset_value, 2
             )
 
         total_profit = round(total_value - total_cost, 2)
