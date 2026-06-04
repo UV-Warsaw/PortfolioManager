@@ -11,6 +11,7 @@ from app.schemas.portfolio import (
     DiversificationResponse,
     DividendSummaryResponse,
     DividendTimelineResponse,
+    EmergencyFundResponse,
     PortfolioSummaryResponse,
     RiskAssessmentResponse,
     WealthSummaryResponse,
@@ -195,3 +196,30 @@ def get_diversification(
     _current_user: User = get_current_user(credentials, session)
     service = SummaryService(session)
     return service.get_diversification_recommendations()
+
+
+@router.get("/emergency-fund", response_model=EmergencyFundResponse)
+def get_emergency_fund(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> EmergencyFundResponse:
+    """Return emergency fund adequacy based on cash + bonds vs monthly expenses.
+
+    Thresholds: <3 months → critical, 3–6 months → good, >6 months → excellent.
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        EmergencyFundResponse with months covered and status.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+    """
+    from app.models.user import User
+
+    current_user: User = get_current_user(credentials, session)
+    monthly_expenses = getattr(current_user, "monthly_expenses", 0.0) or 0.0
+    service = SummaryService(session)
+    return service.get_emergency_fund(monthly_expenses)
