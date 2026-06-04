@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import create_db_and_tables
 from app.routers import (
+    assets_router,
     auth_router,
     bonds_router,
     cash_router,
@@ -83,6 +84,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(assets_router)
 app.include_router(auth_router)
 app.include_router(bonds_router)
 app.include_router(cash_router)

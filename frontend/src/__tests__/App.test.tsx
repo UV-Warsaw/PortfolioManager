@@ -81,7 +81,7 @@ describe('App', () => {
       })
     })
 
-    it('renders Crypto tab as disabled', async () => {
+    it('renders Crypto and Real Estate tabs as enabled', async () => {
       vi.mocked(getMe).mockResolvedValueOnce({ id: 1, email: 'trader@example.com' })
       localStorage.setItem('access_token', 'valid-token')
 
@@ -91,7 +91,10 @@ describe('App', () => {
         expect(screen.getByText('Crypto')).toBeInTheDocument()
       })
       const cryptoBtn = screen.getByText('Crypto').closest('button')
-      expect(cryptoBtn).toBeDisabled()
+      expect(cryptoBtn).not.toBeDisabled()
+
+      const realEstateBtn = screen.getByText('Real Estate').closest('button')
+      expect(realEstateBtn).not.toBeDisabled()
     })
 
     it('falls back to login and clears token when getMe returns an error', async () => {
