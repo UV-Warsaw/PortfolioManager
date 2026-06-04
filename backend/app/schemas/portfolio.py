@@ -172,3 +172,28 @@ class DiversificationResponse(BaseModel):
 
     has_data: bool
     """False when the portfolio is empty (no assets)."""
+
+
+class EmergencyFundResponse(BaseModel):
+    """Emergency fund adequacy — cash + bonds vs monthly expenses."""
+
+    cash_value: float
+    """Current cash holdings value in PLN."""
+
+    bonds_value: float
+    """Current bonds holdings value in PLN."""
+
+    emergency_fund: float
+    """Total emergency fund (cash + bonds) in PLN."""
+
+    monthly_expenses: float
+    """User's declared monthly living expenses in PLN."""
+
+    months_covered: float
+    """How many months of expenses the emergency fund covers (0 if expenses unknown)."""
+
+    status: str
+    """'critical' (<3 months) | 'good' (3–6 months) | 'excellent' (>6 months)."""
+
+    has_data: bool
+    """False when the portfolio is empty (no assets)."""
