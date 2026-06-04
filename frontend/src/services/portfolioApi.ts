@@ -159,3 +159,29 @@ export async function getRiskAssessment(token: string): Promise<RiskAssessment> 
   }
   return res.json() as Promise<RiskAssessment>
 }
+
+export interface DiversificationRecommendation {
+  asset_class: string
+  percentage: number
+  problem: string
+  action: string
+  link_to: string
+}
+
+export interface DiversificationResponse {
+  recommendations: DiversificationRecommendation[]
+  is_diversified: boolean
+  has_data: boolean
+}
+
+export async function getDiversificationRecommendations(
+  token: string,
+): Promise<DiversificationResponse> {
+  const res = await fetch(`${API_URL}/summary/diversification`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch diversification recommendations: ${res.status}`)
+  }
+  return res.json() as Promise<DiversificationResponse>
+}
