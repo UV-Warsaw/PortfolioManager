@@ -4,6 +4,9 @@ from datetime import datetime
 
 from sqlmodel import Session
 
+from app.models.assets import OtherAsset, OtherAssetClass
+from app.models.bonds import Bond, CapitalizationType
+from app.models.cash import CashAccount, CashAccountType
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.services.summary import SummaryService
 
@@ -226,3 +229,209 @@ class TestDashboardEndpoints:
         assert len(body) == 1
         assert body[0]["month"] == 3
         assert body[0]["total"] == 25.0
+
+
+# ── helpers for PROJ-23 wealth tests ─────────────────────────────────────────
+
+def _make_bond(session: Session, principal: float = 1000.0, quantity: int = 1) -> Bond:
+    bond = Bond(
+        name="Test Bond",
+        annual_rate=5.0,
+        years=2.0,
+        capitalization=CapitalizationType.ANNUAL,
+        principal=principal,
+        quantity=quantity,
+        purchase_date=datetime(2024, 1, 1),
+    )
+    session.add(bond)
+    session.commit()
+    session.refresh(bond)
+    return bond
+
+
+def _make_cash_account(session: Session, balance: float = 500.0) -> CashAccount:
+    acct = CashAccount(
+        name="Test Account",
+        account_type=CashAccountType.SAVINGS,
+        balance=balance,
+        currency="PLN",
+    )
+    session.add(acct)
+    session.commit()
+    session.refresh(acct)
+    return acct
+
+
+def _make_crypto(session: Session, price: float = 300.0, qty: float = 2.0) -> OtherAsset:
+    asset = OtherAsset(
+        name="BTC",
+        asset_class=OtherAssetClass.CRYPTO,
+        current_value=price,
+        quantity=qty,
+        purchase_price=250.0,
+        currency="PLN",
+    )
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
+    return asset
+
+
+def _make_real_estate(
+    session: Session,
+    value: float = 400000.0,
+    mortgage: float = 100000.0,
+) -> OtherAsset:
+    asset = OtherAsset(
+        name="Flat",
+        asset_class=OtherAssetClass.REAL_ESTATE,
+        current_value=value,
+        mortgage_remaining=mortgage,
+        currency="PLN",
+    )
+    session.add(asset)
+    session.commit()
+    session.refresh(asset)
+    return asset
+
+
+# ── PROJ-23 service unit tests ────────────────────────────────────────────────
+
+class TestWealthSummaryService:
+    """Unit tests for SummaryService.get_wealth_summary()."""
+
+    def test_empty_portfolio_has_no_data(self, db_session: Session) -> None:
+        """Returns has_data=False and zero total when no assets exist."""
+        result = SummaryService(db_session).get_wealth_summary()
+        assert result.has_data is False
+        assert result.total_value == 0.0
+        assert len(result.breakdown) == 5
+
+    def test_breakdown_has_five_classes(self, db_session: Session) -> None:
+        """Breakdown always contains exactly the five expected asset classes."""
+        result = SummaryService(db_session).get_wealth_summary()
+        names = {item.name for item in result.breakdown}
+        assert names == {"Stocks", "Bonds", "Cash", "Crypto", "Real Estate"}
+
+    def test_bond_value_uses_compound_interest(self, db_session: Session) -> None:
+        """Bond value uses BondCalculationService (compound interest > principal)."""
+        _make_bond(db_session, principal=1000.0, quantity=1)
+        result = SummaryService(db_session).get_wealth_summary()
+        bonds_item = next(i for i in result.breakdown if i.name == "Bonds")
+        # After 1+ years at 5% annual, value must exceed principal
+        assert bonds_item.value > 1000.0
+        assert result.has_data is True
+
+    def test_cash_value_reflects_balance(self, db_session: Session) -> None:
+        """Cash class value equals total cash account balances."""
+        _make_cash_account(db_session, balance=2500.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        cash_item = next(i for i in result.breakdown if i.name == "Cash")
+        assert cash_item.value == 2500.0
+
+    def test_crypto_value_is_quantity_times_price(self, db_session: Session) -> None:
+        """Crypto class value = quantity × current_value (price per unit)."""
+        _make_crypto(db_session, price=300.0, qty=2.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        crypto_item = next(i for i in result.breakdown if i.name == "Crypto")
+        assert crypto_item.value == 600.0
+
+    def test_real_estate_value_is_net_equity(self, db_session: Session) -> None:
+        """Real Estate value = property value − mortgage (net equity)."""
+        _make_real_estate(db_session, value=400000.0, mortgage=100000.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        re_item = next(i for i in result.breakdown if i.name == "Real Estate")
+        assert re_item.value == 300000.0
+
+    def test_real_estate_net_equity_clamped_at_zero(self, db_session: Session) -> None:
+        """Real Estate net equity never goes below zero."""
+        _make_real_estate(db_session, value=50000.0, mortgage=200000.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        re_item = next(i for i in result.breakdown if i.name == "Real Estate")
+        assert re_item.value == 0.0
+
+    def test_percentages_sum_to_100(self, db_session: Session) -> None:
+        """Breakdown percentages sum to ~100% when there is data."""
+        _make_cash_account(db_session, balance=1000.0)
+        _make_crypto(db_session, price=500.0, qty=1.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        total_pct = sum(i.percentage for i in result.breakdown)
+        assert abs(total_pct - 100.0) < 0.1
+
+    def test_total_is_sum_of_classes(self, db_session: Session) -> None:
+        """total_value equals sum of all class values."""
+        _make_cash_account(db_session, balance=1000.0)
+        _make_crypto(db_session, price=200.0, qty=3.0)
+        result = SummaryService(db_session).get_wealth_summary()
+        assert result.total_value == round(sum(i.value for i in result.breakdown), 2)
+
+
+# ── PROJ-23 endpoint integration tests ───────────────────────────────────────
+
+class TestWealthEndpoint:
+    """Integration tests for GET /summary/wealth."""
+
+    def test_requires_auth(self, client) -> None:
+        """Unauthenticated request returns 401/403."""
+        response = client.get("/summary/wealth")
+        assert response.status_code in (401, 403)
+
+    def test_empty_portfolio(self, client) -> None:
+        """Returns has_data=False with zeros when no assets exist."""
+        token = _register_and_login(client)
+        response = client.get(
+            "/summary/wealth",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["has_data"] is False
+        assert body["total_value"] == 0.0
+        assert len(body["breakdown"]) == 5
+
+    def test_cash_appears_in_breakdown(self, client, db_session: Session) -> None:
+        """Cash account balance appears in the wealth breakdown."""
+        _register_and_login(client)
+        _make_cash_account(db_session, balance=3000.0)
+        token = _register_and_login(client)
+        response = client.get(
+            "/summary/wealth",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["has_data"] is True
+        cash = next(c for c in body["breakdown"] if c["name"] == "Cash")
+        assert cash["value"] == 3000.0
+        assert cash["percentage"] == 100.0
+
+    def test_multiple_classes_present(self, client, db_session: Session) -> None:
+        """Multiple non-zero classes are reflected with correct percentages."""
+        _register_and_login(client)
+        _make_cash_account(db_session, balance=1000.0)
+        _make_crypto(db_session, price=500.0, qty=2.0)  # 1000 PLN
+        token = _register_and_login(client)
+        response = client.get(
+            "/summary/wealth",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["total_value"] == 2000.0
+        cash = next(c for c in body["breakdown"] if c["name"] == "Cash")
+        crypto = next(c for c in body["breakdown"] if c["name"] == "Crypto")
+        assert cash["percentage"] == 50.0
+        assert crypto["percentage"] == 50.0
+
+    def test_breakdown_fields_present(self, client) -> None:
+        """Each breakdown item has name, value, and percentage fields."""
+        token = _register_and_login(client)
+        response = client.get(
+            "/summary/wealth",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        for item in response.json()["breakdown"]:
+            assert "name" in item
+            assert "value" in item
+            assert "percentage" in item
