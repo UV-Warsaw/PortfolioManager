@@ -8,6 +8,7 @@ import { OtherAssets } from './components/OtherAssets'
 import { WealthOverview } from './components/WealthOverview'
 import { RiskCard } from './components/RiskCard'
 import { DiversificationCard } from './components/DiversificationCard'
+import { EmergencyFundCard } from './components/EmergencyFundCard'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -406,6 +407,7 @@ const App: React.FC = () => {
             <WealthOverview token={token} />
             <RiskCard token={token} refreshKey={profileVersion} />
             <DiversificationCard token={token} onNavigate={(tab) => setDashTab(tab as DashTab)} />
+            <EmergencyFundCard token={token} refreshKey={profileVersion} />
           </div>
         ) : dashTab === 'stocks' ? (
           <div>
