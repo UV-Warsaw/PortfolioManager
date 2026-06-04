@@ -224,3 +224,26 @@ export async function getCryptoPrices(
   }
   return res.json() as Promise<CryptoPricesResponse>
 }
+
+const USD_TO_PLN = 3.5
+const CRYPTO_CACHE_KEY = 'crypto_prices_usd'
+
+export interface CryptoPricesPLN {
+  BTC: number
+  ETH: number
+}
+
+/**
+ * Fetch BTC/ETH prices in PLN (USD × 3.5), cached in sessionStorage for the
+ * lifetime of the browser session so only one upstream request is made.
+ */
+export async function getCryptoPricesPLN(token: string): Promise<CryptoPricesPLN> {
+  const cached = sessionStorage.getItem(CRYPTO_CACHE_KEY)
+  if (cached) {
+    const usd = JSON.parse(cached) as { BTC: number; ETH: number }
+    return { BTC: usd.BTC * USD_TO_PLN, ETH: usd.ETH * USD_TO_PLN }
+  }
+  const prices = await getCryptoPrices(token, 'USD')
+  sessionStorage.setItem(CRYPTO_CACHE_KEY, JSON.stringify({ BTC: prices.BTC, ETH: prices.ETH }))
+  return { BTC: prices.BTC * USD_TO_PLN, ETH: prices.ETH * USD_TO_PLN }
+}
