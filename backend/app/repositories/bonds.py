@@ -48,7 +48,7 @@ class BondRepository(BaseRepository[Bond]):
         bonds = self.list_all()
         total = 0.0
         for bond in bonds:
-            price = bond.current_price if bond.current_price else bond.purchase_price
+            price = bond.redemption_price if bond.redemption_price else bond.principal
             total += price * bond.quantity
         return round(total, 2)
 

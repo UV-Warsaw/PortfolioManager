@@ -99,3 +99,19 @@ class DividendTimelineResponse(BaseModel):
 
     month: int
     total: float
+
+
+class AssetClassValue(BaseModel):
+    """A single asset class value and its portfolio share."""
+
+    name: str
+    value: float
+    percentage: float
+
+
+class WealthSummaryResponse(BaseModel):
+    """Total portfolio wealth broken down by asset class."""
+
+    total_value: float
+    breakdown: list[AssetClassValue]
+    has_data: bool
