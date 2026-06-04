@@ -8,6 +8,7 @@ from sqlmodel import Session
 
 from app.core.database import get_db
 from app.schemas.portfolio import (
+    DiversificationResponse,
     DividendSummaryResponse,
     DividendTimelineResponse,
     PortfolioSummaryResponse,
@@ -166,3 +167,31 @@ def get_risk_assessment(
     user_preference: str = getattr(current_user, "risk_level", "moderate") or "moderate"
     service = SummaryService(session)
     return service.get_risk_assessment(user_preference)
+
+
+@router.get("/diversification", response_model=DiversificationResponse)
+def get_diversification(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> DiversificationResponse:
+    """Return concentration alerts and diversification recommendations.
+
+    Flags any asset class exceeding 70% of total portfolio value. Returns at
+    most three recommendations sorted by concentration severity.
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        DiversificationResponse with up to three recommendations and an
+        ``is_diversified`` flag.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+    """
+    from app.models.user import User
+
+    _current_user: User = get_current_user(credentials, session)
+    service = SummaryService(session)
+    return service.get_diversification_recommendations()
