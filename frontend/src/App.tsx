@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [dashTab, setDashTab] = useState<DashTab>('overview')
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
+  const [navOpen, setNavOpen] = useState(false)
 
   const handleImportSuccess = useCallback(() => {
     setPortfolioRefreshKey((k) => k + 1)
@@ -162,6 +163,69 @@ const App: React.FC = () => {
 
   return (
     <div className="app-shell">
+      {/* Mobile nav drawer */}
+      {navOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 sm:hidden"
+            style={{ background: 'rgba(0,0,0,0.55)' }}
+            onClick={() => setNavOpen(false)}
+            aria-hidden="true"
+          />
+          {/* Drawer panel */}
+          <div className="nav-drawer sm:hidden" role="dialog" aria-label="Navigation menu">
+            {/* Drawer header */}
+            <div className="nav-drawer-header">
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center justify-center w-7 h-7 rounded-lg"
+                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                    <polyline points="16 7 22 7 22 13" />
+                  </svg>
+                </div>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Portfolio Manager</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNavOpen(false)}
+                aria-label="Close navigation"
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: '4px' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Nav items */}
+            <nav style={{ padding: '0.5rem' }}>
+              {([
+                { tab: 'overview' as DashTab, label: 'Overview', icon: <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /> },
+                { tab: 'stocks' as DashTab, label: 'Stocks', icon: <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" /> },
+                { tab: 'bonds' as DashTab, label: 'Bonds', icon: <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" /> },
+                { tab: 'cash' as DashTab, label: 'Cash', icon: <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zM2 9v6a2 2 0 002 2h12a2 2 0 002-2V9H2zm5 2h6a1 1 0 010 2H7a1 1 0 010-2z" /> },
+                { tab: 'crypto' as DashTab, label: 'Crypto', icon: <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /> },
+                { tab: 'real-estate' as DashTab, label: 'Real Estate', icon: <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h4a1 1 0 001-1v-4h2v4a1 1 0 001 1h4a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /> },
+              ] as const).map(({ tab, label, icon }) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`nav-drawer-item${dashTab === tab && !showProfile ? ' active' : ''}`}
+                  onClick={() => { setDashTab(tab); setShowProfile(false); setNavOpen(false) }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">{icon}</svg>
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </>
+      )}
+
       {/* Topbar */}
       <header className="topbar">
         {/* Logo */}
@@ -183,22 +247,18 @@ const App: React.FC = () => {
           </span>
         </div>
 
-        {/* Mobile nav dropdown — hidden on sm+ */}
-        <div className="flex-1 sm:hidden mx-1">
-          <select
-            className="nav-select"
-            value={dashTab}
-            onChange={(e) => { setDashTab(e.target.value as DashTab); setShowProfile(false) }}
-            aria-label="Navigate to section"
-          >
-            <option value="overview">Overview</option>
-            <option value="stocks">Stocks</option>
-            <option value="bonds">Bonds</option>
-            <option value="cash">Cash</option>
-            <option value="crypto">Crypto</option>
-            <option value="real-estate">Real Estate</option>
-          </select>
-        </div>
+        {/* Mobile hamburger — hidden on sm+ */}
+        <button
+          type="button"
+          className="sm:hidden btn-cinematic"
+          onClick={() => setNavOpen(true)}
+          aria-label="Open navigation"
+          aria-expanded={navOpen}
+        >
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+          </svg>
+        </button>
 
         {/* Desktop nav tabs — hidden on mobile */}
         <nav className="hidden sm:flex items-center gap-1" aria-label="Main navigation">
