@@ -8,11 +8,38 @@ from app.models.portfolio import Transaction
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
     AssetClassValue,
+    DiversificationRecommendation,
+    DiversificationResponse,
     DividendSummaryResponse,
     DividendTimelineResponse,
     RiskAssessmentResponse,
     WealthSummaryResponse,
 )
+
+_CONCENTRATION_THRESHOLD = 70.0
+
+_ASSET_GUIDANCE: dict[str, tuple[str, str]] = {
+    "Stocks": (
+        "stocks",
+        "Consider increasing your bonds or cash allocation to reduce equity concentration.",
+    ),
+    "Bonds": (
+        "bonds",
+        "Consider diversifying into stocks or other asset classes for better returns.",
+    ),
+    "Cash": (
+        "cash",
+        "Consider deploying excess cash into stocks or bonds for better long-term returns.",
+    ),
+    "Crypto": (
+        "crypto",
+        "Crypto is highly volatile; consider reallocating some holdings into lower-risk assets.",
+    ),
+    "Real Estate": (
+        "real-estate",
+        "Consider diversifying into liquid assets such as stocks or bonds.",
+    ),
+}
 
 logger = logging.getLogger("portfolio_backend.services.summary")
 
@@ -224,5 +251,55 @@ class SummaryService:
             high_pct=high_pct,
             medium_pct=medium_pct,
             low_pct=low_pct,
+            has_data=True,
+        )
+
+    def get_diversification_recommendations(self) -> DiversificationResponse:
+        """Detect asset-class concentration and generate diversification recommendations.
+
+        A concentration alert is raised when a single asset class exceeds
+        _CONCENTRATION_THRESHOLD (70%) of the total portfolio value. At most
+        three recommendations are returned, sorted by concentration level (highest
+        first).
+
+        Returns:
+            DiversificationResponse with up to three recommendations and an
+            ``is_diversified`` flag.
+        """
+        wealth = self.get_wealth_summary()
+
+        if not wealth.has_data:
+            return DiversificationResponse(
+                recommendations=[],
+                is_diversified=True,
+                has_data=False,
+            )
+
+        recs: list[DiversificationRecommendation] = []
+        for asset in wealth.breakdown:
+            if asset.percentage > _CONCENTRATION_THRESHOLD:
+                link, action = _ASSET_GUIDANCE.get(
+                    asset.name,
+                    ("overview", "Consider diversifying your portfolio."),
+                )
+                recs.append(
+                    DiversificationRecommendation(
+                        asset_class=asset.name,
+                        percentage=asset.percentage,
+                        problem=(
+                            f"{asset.percentage:.0f}% of your portfolio is"
+                            f" concentrated in {asset.name.lower()}."
+                        ),
+                        action=action,
+                        link_to=link,
+                    )
+                )
+
+        recs.sort(key=lambda r: r.percentage, reverse=True)
+        recs = recs[:3]
+
+        return DiversificationResponse(
+            recommendations=recs,
+            is_diversified=len(recs) == 0,
             has_data=True,
         )
