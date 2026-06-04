@@ -233,6 +233,7 @@ class TestDashboardEndpoints:
 
 # ── helpers for PROJ-23 wealth tests ─────────────────────────────────────────
 
+
 def _make_bond(session: Session, principal: float = 1000.0, quantity: int = 1) -> Bond:
     bond = Bond(
         name="Test Bond",
@@ -262,7 +263,9 @@ def _make_cash_account(session: Session, balance: float = 500.0) -> CashAccount:
     return acct
 
 
-def _make_crypto(session: Session, price: float = 300.0, qty: float = 2.0) -> OtherAsset:
+def _make_crypto(
+    session: Session, price: float = 300.0, qty: float = 2.0
+) -> OtherAsset:
     asset = OtherAsset(
         name="BTC",
         asset_class=OtherAssetClass.CRYPTO,
@@ -296,6 +299,7 @@ def _make_real_estate(
 
 
 # ── PROJ-23 service unit tests ────────────────────────────────────────────────
+
 
 class TestWealthSummaryService:
     """Unit tests for SummaryService.get_wealth_summary()."""
@@ -368,6 +372,7 @@ class TestWealthSummaryService:
 
 # ── PROJ-23 endpoint integration tests ───────────────────────────────────────
 
+
 class TestWealthEndpoint:
     """Integration tests for GET /summary/wealth."""
 
@@ -435,3 +440,133 @@ class TestWealthEndpoint:
             assert "name" in item
             assert "value" in item
             assert "percentage" in item
+
+
+# ── PROJ-27 risk assessment tests ────────────────────────────────────────────
+
+
+def _register_and_login_unique(client, email: str) -> str:
+    """Register a unique user and return a JWT token."""
+    client.post("/auth/register", json={"email": email, "password": "Pass1234!"})
+    res = client.post("/auth/login", json={"email": email, "password": "Pass1234!"})
+    return res.json()["access_token"]
+
+
+class TestRiskAssessmentService:
+    """Unit tests for SummaryService.get_risk_assessment()."""
+
+    def test_empty_portfolio_returns_moderate_no_data(
+        self, db_session: Session
+    ) -> None:
+        """Empty portfolio returns has_data=False and moderate as default."""
+        result = SummaryService(db_session).get_risk_assessment("moderate")
+        assert result.has_data is False
+        assert result.portfolio_risk == "moderate"
+        assert result.high_pct == 0.0
+        assert result.medium_pct == 0.0
+        assert result.low_pct == 0.0
+
+    def test_user_preference_is_preserved(self, db_session: Session) -> None:
+        """User preference is echoed back unchanged."""
+        result = SummaryService(db_session).get_risk_assessment("conservative")
+        assert result.user_preference == "conservative"
+
+    def test_aggressive_when_stocks_dominate(self, db_session: Session) -> None:
+        """Portfolio with >50% crypto → aggressive."""
+        # 600 PLN crypto (high), 100 PLN cash (low) → high_pct = 85.7%
+        _make_crypto(db_session, price=300.0, qty=2.0)  # 600 PLN
+        _make_cash_account(db_session, balance=100.0)
+        result = SummaryService(db_session).get_risk_assessment("conservative")
+        assert result.portfolio_risk == "aggressive"
+        assert result.high_pct > 50.0
+        assert result.is_aligned is False
+
+    def test_conservative_when_low_risk_dominates(self, db_session: Session) -> None:
+        """Portfolio with ≥60% bonds + cash → conservative."""
+        _make_cash_account(db_session, balance=800.0)  # 800 PLN low
+        _make_crypto(db_session, price=100.0, qty=2.0)  # 200 PLN high → low_pct=80%
+        result = SummaryService(db_session).get_risk_assessment("conservative")
+        assert result.portfolio_risk == "conservative"
+        assert result.low_pct >= 60.0
+        assert result.is_aligned is True
+
+    def test_moderate_when_mixed(self, db_session: Session) -> None:
+        """Portfolio with neither bucket dominant → moderate."""
+        # 400 high (crypto), 400 medium (stocks/RE), 200 low → high=40%, medium=40%, low=20%
+        _make_crypto(db_session, price=200.0, qty=2.0)  # 400 high
+        _make_real_estate(db_session, value=400.0, mortgage=0.0)  # 400 medium
+        _make_cash_account(db_session, balance=200.0)  # 200 low
+        result = SummaryService(db_session).get_risk_assessment("moderate")
+        assert result.portfolio_risk == "moderate"
+        assert result.is_aligned is True
+
+    def test_aligned_true_when_match(self, db_session: Session) -> None:
+        """is_aligned=True when portfolio_risk equals user_preference."""
+        _make_cash_account(db_session, balance=1000.0)  # conservative portfolio
+        result = SummaryService(db_session).get_risk_assessment("conservative")
+        assert result.is_aligned is True
+
+    def test_aligned_false_when_mismatch(self, db_session: Session) -> None:
+        """is_aligned=False when portfolio_risk differs from user_preference."""
+        _make_cash_account(db_session, balance=1000.0)  # conservative portfolio
+        result = SummaryService(db_session).get_risk_assessment("aggressive")
+        assert result.is_aligned is False
+
+    def test_pcts_sum_to_100_when_data_present(self, db_session: Session) -> None:
+        """high_pct + medium_pct + low_pct ≈ 100 when has_data=True."""
+        _make_cash_account(db_session, balance=500.0)
+        _make_crypto(db_session, price=250.0, qty=2.0)
+        result = SummaryService(db_session).get_risk_assessment("moderate")
+        assert result.has_data is True
+        total = result.high_pct + result.medium_pct + result.low_pct
+        assert abs(total - 100.0) < 0.5
+
+
+class TestRiskEndpoint:
+    """Integration tests for GET /summary/risk."""
+
+    def test_requires_auth(self, client) -> None:
+        """Unauthenticated request returns 401/403."""
+        response = client.get("/summary/risk")
+        assert response.status_code in (401, 403)
+
+    def test_empty_portfolio_response_shape(self, client) -> None:
+        """Returns correct shape with has_data=False on empty portfolio."""
+        token = _register_and_login_unique(client, "risk_empty@test.com")
+        response = client.get(
+            "/summary/risk",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["has_data"] is False
+        assert "portfolio_risk" in body
+        assert "user_preference" in body
+        assert "is_aligned" in body
+        assert "high_pct" in body
+        assert "medium_pct" in body
+        assert "low_pct" in body
+
+    def test_aggressive_portfolio_detected(self, client, db_session: Session) -> None:
+        """Endpoint returns aggressive when stocks/crypto > 50%."""
+        _register_and_login_unique(client, "risk_agg@test.com")
+        _make_crypto(db_session, price=500.0, qty=3.0)  # 1500 high
+        _make_cash_account(db_session, balance=100.0)  # 100 low
+        token = _register_and_login_unique(client, "risk_agg2@test.com")
+        response = client.get(
+            "/summary/risk",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        assert response.json()["portfolio_risk"] == "aggressive"
+
+    def test_user_preference_reflects_profile(self, client) -> None:
+        """user_preference matches the default risk level on a new user."""
+        token = _register_and_login_unique(client, "risk_pref@test.com")
+        response = client.get(
+            "/summary/risk",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        # New users default to "moderate"
+        assert response.json()["user_preference"] == "moderate"

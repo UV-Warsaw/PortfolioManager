@@ -67,7 +67,13 @@ describe('App', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /Stocks/i })).toBeInTheDocument()
       })
-      expect(screen.getByTestId('import-form')).toBeInTheDocument()
+
+      // Navigate to Stocks tab (default is now Overview)
+      screen.getByRole('button', { name: /Stocks/i }).click()
+
+      await waitFor(() => {
+        expect(screen.getByTestId('import-form')).toBeInTheDocument()
+      })
     })
 
     it('displays the authenticated user email in the topbar', async () => {

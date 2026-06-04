@@ -6,6 +6,7 @@ import { Bonds } from './components/Bonds'
 import { Cash } from './components/Cash'
 import { OtherAssets } from './components/OtherAssets'
 import { WealthOverview } from './components/WealthOverview'
+import { RiskCard } from './components/RiskCard'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -323,6 +324,7 @@ const App: React.FC = () => {
               </p>
             </div>
             <WealthOverview token={token} />
+            <RiskCard token={token} />
           </div>
         ) : dashTab === 'stocks' ? (
           <div>
