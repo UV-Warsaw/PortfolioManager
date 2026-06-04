@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlmodel import Session
 
-from app.models.assets import OtherAsset
+from app.models.assets import OtherAsset, OtherAssetClass
 from app.repositories.assets import OtherAssetRepository
 from app.schemas.assets import (
     OtherAssetAnalysisResponse,
@@ -70,6 +70,7 @@ class OtherAssetService:
             currency=data.currency,
             quantity=data.quantity,
             purchase_price=data.purchase_price,
+            mortgage_remaining=data.mortgage_remaining,
             notes=data.notes,
         )
         self.repo.create(asset)
@@ -152,12 +153,18 @@ class OtherAssetService:
         pnl = self._calculate_pnl(
             asset.current_value, asset.quantity, asset.purchase_price
         )
+        net_equity = None
+        if asset.asset_class == OtherAssetClass.REAL_ESTATE:
+            net_equity = round(
+                asset.current_value - (asset.mortgage_remaining or 0.0), 2
+            )
         return OtherAssetAnalysisResponse(
             asset_id=asset.id,
             name=asset.name,
             asset_class=asset.asset_class,
             current_value=asset.current_value,
             currency=asset.currency,
+            net_equity=net_equity,
             **pnl,
         )
 
@@ -173,12 +180,15 @@ class OtherAssetService:
                 total_value=0.0,
                 total_cost=0.0,
                 total_profit=0.0,
+                total_mortgage=0.0,
+                total_net_equity=0.0,
                 assets_count=0,
                 assets_by_class={},
             )
 
         total_value = 0.0
         total_cost = 0.0
+        total_mortgage = 0.0
         by_class: dict[str, dict] = {}
 
         for a in assets:
@@ -186,6 +196,8 @@ class OtherAssetService:
             pnl = self._calculate_pnl(a.current_value, a.quantity, a.purchase_price)
             if pnl["total_cost"] is not None:
                 total_cost += pnl["total_cost"]
+            if a.asset_class == OtherAssetClass.REAL_ESTATE and a.mortgage_remaining:
+                total_mortgage += a.mortgage_remaining
 
             key = a.asset_class.value
             if key not in by_class:
@@ -196,11 +208,14 @@ class OtherAssetService:
             )
 
         total_profit = round(total_value - total_cost, 2)
+        total_net_equity = round(total_value - total_mortgage, 2)
 
         return OtherAssetsPortfolioSummaryResponse(
             total_value=round(total_value, 2),
             total_cost=round(total_cost, 2),
             total_profit=total_profit,
+            total_mortgage=round(total_mortgage, 2),
+            total_net_equity=total_net_equity,
             assets_count=len(assets),
             assets_by_class=by_class,
         )

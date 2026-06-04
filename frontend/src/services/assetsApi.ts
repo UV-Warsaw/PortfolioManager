@@ -16,6 +16,7 @@ export interface OtherAsset {
   currency: string
   quantity: number | null
   purchase_price: number | null
+  mortgage_remaining: number | null
   notes: string | null
   created_at: string
   updated_at: string | null
@@ -28,6 +29,7 @@ export interface OtherAssetCreate {
   currency?: string
   quantity?: number | null
   purchase_price?: number | null
+  mortgage_remaining?: number | null
   notes?: string | null
 }
 
@@ -38,6 +40,7 @@ export interface OtherAssetUpdate {
   currency?: string
   quantity?: number | null
   purchase_price?: number | null
+  mortgage_remaining?: number | null
   notes?: string | null
 }
 
@@ -50,12 +53,15 @@ export interface OtherAssetAnalysis {
   total_cost: number | null
   profit: number | null
   profit_pct: number | null
+  net_equity: number | null
 }
 
 export interface OtherAssetsPortfolioSummary {
   total_value: number
   total_cost: number
   total_profit: number
+  total_mortgage: number
+  total_net_equity: number
   assets_count: number
   assets_by_class: Record<string, { count: number; total_value: number }>
 }

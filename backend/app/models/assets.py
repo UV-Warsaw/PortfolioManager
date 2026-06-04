@@ -25,6 +25,8 @@ class OtherAsset(SQLModel, table=True):
     # Optional crypto P&L fields
     quantity: float | None = Field(default=None)
     purchase_price: float | None = Field(default=None)
+    # Optional real estate field
+    mortgage_remaining: float | None = Field(default=None)
     notes: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default=None)
