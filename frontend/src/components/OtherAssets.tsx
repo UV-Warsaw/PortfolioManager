@@ -192,6 +192,13 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
     return acc + (an?.market_value ?? (a.quantity != null ? a.quantity * a.current_value : a.current_value))
   }, 0)
 
+  // Total crypto profit = sum of individual profits (null entries skipped)
+  const totalCryptoProfit = cryptoAssets.reduce<number | null>((acc, a) => {
+    const profit = analysisMap[a.id]?.profit
+    if (profit == null) return acc
+    return (acc ?? 0) + profit
+  }, null)
+
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -243,6 +250,13 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
         {cryptoAssets.length > 0 && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '20px' }}>
             <StatCard label="Total Holdings" value={fmtSimple(totalCryptoValue) + ' PLN'} />
+            {totalCryptoProfit !== null && (
+              <StatCard
+                label="Total P&L"
+                value={(totalCryptoProfit >= 0 ? '+' : '') + fmtSimple(totalCryptoProfit) + ' PLN'}
+                valueColor={profitColor(totalCryptoProfit)}
+              />
+            )}
             {cryptoAssets.map((a) => {
               const an = analysisMap[a.id]
               const holdingVal = an?.market_value ?? (a.quantity != null ? a.quantity * a.current_value : a.current_value)
