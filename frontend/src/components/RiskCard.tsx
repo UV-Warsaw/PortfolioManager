@@ -12,6 +12,7 @@ import { getRiskAssessment, type RiskAssessment } from '../services/portfolioApi
 
 interface Props {
   token: string
+  refreshKey?: number
 }
 
 const RISK_COLORS: Record<string, string> = {
@@ -32,12 +33,14 @@ const BAR_SEGMENTS = [
   { key: 'high_pct',   label: 'High risk',   color: '#f97316' },
 ] as const
 
-export const RiskCard: React.FC<Props> = ({ token }) => {
+export const RiskCard: React.FC<Props> = ({ token, refreshKey }) => {
   const [data, setData] = useState<RiskAssessment | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
+    setLoading(true)
+    setError('')
     const load = async () => {
       try {
         setData(await getRiskAssessment(token))
@@ -48,7 +51,7 @@ export const RiskCard: React.FC<Props> = ({ token }) => {
       }
     }
     void load()
-  }, [token])
+  }, [token, refreshKey])
 
   if (loading) {
     return (
