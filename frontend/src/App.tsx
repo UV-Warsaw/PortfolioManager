@@ -13,7 +13,7 @@ import { getMe, logoutUser } from './services/authApi'
 
 type ApiStatus = 'checking' | 'online' | 'offline'
 type AuthScreen = 'login' | 'register' | 'forgot-password'
-type DashTab = 'stocks' | 'bonds' | 'cash' | 'crypto' | 'real-estate'
+type DashTab = 'overview' | 'stocks' | 'bonds' | 'cash' | 'crypto' | 'real-estate'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -23,7 +23,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [currentEmail, setCurrentEmail] = useState('')
-  const [dashTab, setDashTab] = useState<DashTab>('stocks')
+  const [dashTab, setDashTab] = useState<DashTab>('overview')
   const [loggingOut, setLoggingOut] = useState(false)
   const [portfolioRefreshKey, setPortfolioRefreshKey] = useState(0)
 
@@ -185,6 +185,17 @@ const App: React.FC = () => {
         <nav className="flex items-center gap-1" aria-label="Main navigation">
           <button
             type="button"
+            className={`nav-tab${dashTab === 'overview' && !showProfile ? ' active' : ''}`}
+            onClick={() => { setDashTab('overview'); setShowProfile(false) }}
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            Overview
+          </button>
+
+          <button
+            type="button"
             className={`nav-tab${dashTab === 'stocks' && !showProfile ? ' active' : ''}`}
             onClick={() => { setDashTab('stocks'); setShowProfile(false) }}
           >
@@ -301,10 +312,21 @@ const App: React.FC = () => {
               />
             </div>
           </div>
+        ) : dashTab === 'overview' ? (
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
+                Overview
+              </h2>
+              <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>
+                Total portfolio value and asset class breakdown
+              </p>
+            </div>
+            <WealthOverview token={token} />
+          </div>
         ) : dashTab === 'stocks' ? (
           <div>
             <div className="max-w-6xl mx-auto px-4">
-              <WealthOverview token={token} />
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                   Stocks
