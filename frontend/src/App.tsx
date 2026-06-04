@@ -183,8 +183,25 @@ const App: React.FC = () => {
           </span>
         </div>
 
-        {/* Nav tabs */}
-        <nav className="flex items-center gap-1" aria-label="Main navigation">
+        {/* Mobile nav dropdown — hidden on sm+ */}
+        <div className="flex-1 sm:hidden mx-1">
+          <select
+            className="nav-select"
+            value={dashTab}
+            onChange={(e) => { setDashTab(e.target.value as DashTab); setShowProfile(false) }}
+            aria-label="Navigate to section"
+          >
+            <option value="overview">Overview</option>
+            <option value="stocks">Stocks</option>
+            <option value="bonds">Bonds</option>
+            <option value="cash">Cash</option>
+            <option value="crypto">Crypto</option>
+            <option value="real-estate">Real Estate</option>
+          </select>
+        </div>
+
+        {/* Desktop nav tabs — hidden on mobile */}
+        <nav className="hidden sm:flex items-center gap-1" aria-label="Main navigation">
           <button
             type="button"
             className={`nav-tab${dashTab === 'overview' && !showProfile ? ' active' : ''}`}
