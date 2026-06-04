@@ -11,6 +11,7 @@ from app.schemas.portfolio import (
     DividendSummaryResponse,
     DividendTimelineResponse,
     PortfolioSummaryResponse,
+    RiskAssessmentResponse,
     WealthSummaryResponse,
 )
 from app.services.auth import get_current_user
@@ -135,3 +136,33 @@ def get_wealth_summary(
     _current_user: User = get_current_user(credentials, session)
     service = SummaryService(session)
     return service.get_wealth_summary()
+
+
+@router.get("/risk", response_model=RiskAssessmentResponse)
+def get_risk_assessment(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> RiskAssessmentResponse:
+    """Return portfolio risk level compared against the user's declared preference.
+
+    Classifies portfolio risk from asset-class weights:
+      - Stocks + Crypto  → high risk
+      - Real Estate      → medium risk
+      - Bonds + Cash     → low risk
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        RiskAssessmentResponse with computed risk, preference, and alignment flag.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+    """
+    from app.models.user import User
+
+    current_user: User = get_current_user(credentials, session)
+    user_preference: str = getattr(current_user, "risk_level", "moderate") or "moderate"
+    service = SummaryService(session)
+    return service.get_risk_assessment(user_preference)
