@@ -73,15 +73,18 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   const [pricesLoading, setPricesLoading] = useState(false)
   const [pricesError, setPricesError] = useState(false)
   const [livePricePLN, setLivePricePLN] = useState<number | null>(null)
+  const [livePriceUSD, setLivePriceUSD] = useState<number | null>(null)
 
   const isCrypto = assetClass === 'Crypto'
   const isRealEstate = assetClass === 'Real Estate'
   const lockClass = initialAssetClass !== undefined || asset !== undefined
 
   const applyPrice = (prices: { BTC: number; ETH: number }, coin: string) => {
-    const p = coin === 'BTC' ? prices.BTC : prices.ETH
-    const rounded = Math.round(p * 100) / 100
+    const pln = coin === 'BTC' ? prices.BTC : prices.ETH
+    const rounded = Math.round(pln * 100) / 100
+    const usd = Math.round((pln / 3.5) * 100) / 100
     setLivePricePLN(rounded)
+    setLivePriceUSD(usd)
     setCurrentValue(String(rounded))
   }
 
@@ -288,18 +291,25 @@ export const AssetForm: React.FC<AssetFormProps> = ({
                 minHeight: '38px',
                 display: 'flex',
                 alignItems: 'center',
+                gap: '8px',
               }}
             >
               {pricesLoading
                 ? 'Fetching live price…'
                 : pricesError
                 ? 'Could not fetch price — check connection and reopen the form'
-                : livePricePLN !== null
-                ? `${livePricePLN.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN`
+                : livePriceUSD !== null && livePricePLN !== null
+                ? (
+                  <>
+                    <span>{livePriceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</span>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>→</span>
+                    <span style={{ fontWeight: 600 }}>{livePricePLN.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLN</span>
+                  </>
+                )
                 : '—'}
             </div>
             <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
-              Live from CoinGecko · USD × 3.5 · cached for this session
+              Live from CoinGecko · × 3.5 exchange rate · cached for this session
             </span>
           </div>
         )}
