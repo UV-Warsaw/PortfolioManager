@@ -171,7 +171,7 @@ export const WealthOverview: React.FC<Props> = ({ token }) => {
 
         {/* Legend */}
         <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {data.breakdown.map((cls: AssetClassValue) => (
+          {[...data.breakdown].sort((a, b) => b.value - a.value).map((cls: AssetClassValue) => (
             <LegendRow key={cls.name} cls={cls} total={data.total_value} />
           ))}
         </div>
