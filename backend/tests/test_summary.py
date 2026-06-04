@@ -712,3 +712,134 @@ class TestDiversificationEndpoint:
         body = response.json()
         assert body["is_diversified"] is True
         assert body["recommendations"] == []
+
+
+# ── PROJ-28 emergency fund tests ──────────────────────────────────────────────
+
+
+class TestEmergencyFundService:
+    """Unit tests for SummaryService.get_emergency_fund()."""
+
+    def test_empty_portfolio_returns_no_data(self, db_session: Session) -> None:
+        """Returns has_data=False and status='critical' when portfolio is empty."""
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.has_data is False
+        assert result.cash_value == 0.0
+        assert result.bonds_value == 0.0
+        assert result.emergency_fund == 0.0
+        assert result.months_covered == 0.0
+        assert result.status == "critical"
+
+    def test_cash_only_less_than_3_months_is_critical(
+        self, db_session: Session
+    ) -> None:
+        """Cash of 2 months worth → critical."""
+        _make_cash_account(db_session, balance=2000.0)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.has_data is True
+        assert result.months_covered == 2.0
+        assert result.status == "critical"
+
+    def test_bonds_only_between_3_and_6_months_is_good(
+        self, db_session: Session
+    ) -> None:
+        """Bonds covering 4 months → good."""
+        _make_bond(db_session, principal=1000.0, quantity=4)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.has_data is True
+        assert result.bonds_value > 0.0
+        assert result.status == "good"
+
+    def test_mixed_cash_and_bonds_above_6_months_is_excellent(
+        self, db_session: Session
+    ) -> None:
+        """Cash + Bonds covering > 6 months → excellent."""
+        _make_cash_account(db_session, balance=4000.0)
+        _make_bond(db_session, principal=1000.0, quantity=4)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.has_data is True
+        assert result.status == "excellent"
+
+    def test_exactly_3_months_is_good(self, db_session: Session) -> None:
+        """Exactly 3 months covered → good (boundary)."""
+        _make_cash_account(db_session, balance=3000.0)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.status == "good"
+
+    def test_exactly_6_months_is_good(self, db_session: Session) -> None:
+        """Exactly 6 months covered → good (upper boundary)."""
+        _make_cash_account(db_session, balance=6000.0)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=1000.0)
+        assert result.status == "good"
+
+    def test_monthly_expenses_zero_returns_good_zero_months(
+        self, db_session: Session
+    ) -> None:
+        """When monthly_expenses == 0, months_covered = 0 and status = 'good'."""
+        _make_cash_account(db_session, balance=5000.0)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=0.0)
+        assert result.months_covered == 0.0
+        assert result.status == "good"
+
+    def test_cash_and_bonds_values_correct(self, db_session: Session) -> None:
+        """cash_value and bonds_value are correctly separated."""
+        _make_cash_account(db_session, balance=1500.0)
+        _make_bond(db_session, principal=2000.0, quantity=1)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=500.0)
+        assert result.cash_value == 1500.0
+        assert result.bonds_value > 0.0
+        assert result.emergency_fund == round(result.cash_value + result.bonds_value, 2)
+
+    def test_emergency_fund_equals_cash_plus_bonds(self, db_session: Session) -> None:
+        """emergency_fund is always cash_value + bonds_value."""
+        _make_cash_account(db_session, balance=1000.0)
+        _make_bond(db_session, principal=1000.0, quantity=2)
+        result = SummaryService(db_session).get_emergency_fund(monthly_expenses=800.0)
+        assert result.emergency_fund == round(result.cash_value + result.bonds_value, 2)
+
+
+class TestEmergencyFundEndpoint:
+    """Integration tests for GET /summary/emergency-fund."""
+
+    def test_requires_auth(self, client) -> None:
+        """Returns 401/403 when no token is provided."""
+        response = client.get("/summary/emergency-fund")
+        assert response.status_code in (401, 403)
+
+    def test_empty_portfolio_shape(self, client) -> None:
+        """Returns correct shape with has_data=False for an empty portfolio."""
+        token = _register_and_login_unique(client, "ef_empty@test.com")
+        response = client.get(
+            "/summary/emergency-fund",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["has_data"] is False
+        assert body["cash_value"] == 0.0
+        assert body["bonds_value"] == 0.0
+        assert body["emergency_fund"] == 0.0
+        assert body["months_covered"] == 0.0
+        assert body["status"] == "critical"
+
+    def test_cash_present_returns_data(self, client, db_session: Session) -> None:
+        """Endpoint returns has_data=True and correct fields when cash exists."""
+        _register_and_login_unique(client, "ef_cash_other@test.com")
+        _make_cash_account(db_session, balance=3000.0)
+        token = _register_and_login_unique(client, "ef_cash@test.com")
+        response = client.get(
+            "/summary/emergency-fund",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["has_data"] is True
+        for field in (
+            "cash_value",
+            "bonds_value",
+            "emergency_fund",
+            "monthly_expenses",
+            "months_covered",
+            "status",
+        ):
+            assert field in body
