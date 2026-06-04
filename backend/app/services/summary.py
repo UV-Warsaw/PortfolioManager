@@ -7,8 +7,10 @@ from sqlmodel import Session, func, select
 from app.models.portfolio import Transaction
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
+    AssetClassValue,
     DividendSummaryResponse,
     DividendTimelineResponse,
+    WealthSummaryResponse,
 )
 
 logger = logging.getLogger("portfolio_backend.services.summary")
@@ -100,3 +102,67 @@ class SummaryService:
             DividendTimelineResponse(month=t["month"], total=t["total"])
             for t in timelines
         ]
+
+    def get_wealth_summary(self) -> WealthSummaryResponse:
+        """Aggregate total portfolio wealth across all asset classes.
+
+        Returns:
+            WealthSummaryResponse with total value and per-class breakdown.
+        """
+        from app.services.assets import OtherAssetService
+        from app.services.bonds import BondService
+        from app.services.cash import CashService
+
+        # Stocks
+        accounts = self.tx_repo.get_account_values()
+        stocks_value = round(sum(accounts.values()), 2)
+
+        # Bonds
+        bond_svc = BondService(self.session)
+        bonds_value = round(bond_svc.get_total_value(), 2)
+
+        # Cash
+        cash_svc = CashService(self.session)
+        cash_summary = cash_svc.portfolio_summary()
+        cash_value = round(cash_summary.total_balance, 2)
+
+        # Crypto & Real Estate (from other assets)
+        asset_svc = OtherAssetService(self.session)
+        other_summary = asset_svc.portfolio_summary()
+        by_class = other_summary.assets_by_class
+
+        crypto_value = round(by_class.get("Crypto", {}).get("total_value", 0.0), 2)
+        re_gross = round(by_class.get("Real Estate", {}).get("total_value", 0.0), 2)
+        re_net = round(re_gross - other_summary.total_mortgage, 2)
+        real_estate_value = max(re_net, 0.0)  # net equity (value minus mortgage)
+
+        total = (
+            stocks_value + bonds_value + cash_value + crypto_value + real_estate_value
+        )
+
+        def pct(v: float) -> float:
+            return round((v / total * 100), 2) if total > 0 else 0.0
+
+        breakdown = [
+            AssetClassValue(
+                name="Stocks", value=stocks_value, percentage=pct(stocks_value)
+            ),
+            AssetClassValue(
+                name="Bonds", value=bonds_value, percentage=pct(bonds_value)
+            ),
+            AssetClassValue(name="Cash", value=cash_value, percentage=pct(cash_value)),
+            AssetClassValue(
+                name="Crypto", value=crypto_value, percentage=pct(crypto_value)
+            ),
+            AssetClassValue(
+                name="Real Estate",
+                value=real_estate_value,
+                percentage=pct(real_estate_value),
+            ),
+        ]
+
+        return WealthSummaryResponse(
+            total_value=round(total, 2),
+            breakdown=breakdown,
+            has_data=total > 0,
+        )

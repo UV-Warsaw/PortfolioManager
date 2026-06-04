@@ -5,6 +5,7 @@ import ImportForm from './components/ImportForm'
 import { Bonds } from './components/Bonds'
 import { Cash } from './components/Cash'
 import { OtherAssets } from './components/OtherAssets'
+import { WealthOverview } from './components/WealthOverview'
 import LoginForm from './components/LoginForm'
 import ProfileForm from './components/ProfileForm'
 import RegisterForm from './components/RegisterForm'
@@ -303,6 +304,7 @@ const App: React.FC = () => {
         ) : dashTab === 'stocks' ? (
           <div>
             <div className="max-w-6xl mx-auto px-4">
+              <WealthOverview token={token} />
               <div className="mb-6">
                 <h2 className="text-2xl font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                   Stocks

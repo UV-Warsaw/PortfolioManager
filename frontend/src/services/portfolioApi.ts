@@ -117,3 +117,25 @@ export async function getDividendTimeline(
   }
   return res.json() as Promise<DividendTimelineResponse[]>
 }
+
+export interface AssetClassValue {
+  name: string
+  value: number
+  percentage: number
+}
+
+export interface WealthSummary {
+  total_value: number
+  breakdown: AssetClassValue[]
+  has_data: boolean
+}
+
+export async function getWealthSummary(token: string): Promise<WealthSummary> {
+  const res = await fetch(`${API_URL}/summary/wealth`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch wealth summary: ${res.status}`)
+  }
+  return res.json() as Promise<WealthSummary>
+}

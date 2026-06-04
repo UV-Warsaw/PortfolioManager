@@ -11,6 +11,7 @@ from app.schemas.portfolio import (
     DividendSummaryResponse,
     DividendTimelineResponse,
     PortfolioSummaryResponse,
+    WealthSummaryResponse,
 )
 from app.services.auth import get_current_user
 from app.services.summary import SummaryService
@@ -108,3 +109,29 @@ def get_dividend_timeline(
     _current_user: User = get_current_user(credentials, session)
     service = SummaryService(session)
     return service.get_dividend_monthly_timeline(year=year, account=account)
+
+
+@router.get("/wealth", response_model=WealthSummaryResponse)
+def get_wealth_summary(
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> WealthSummaryResponse:
+    """Return total portfolio wealth aggregated across all asset classes.
+
+    Combines stocks, bonds, cash, crypto, and real estate (net equity).
+
+    Args:
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        WealthSummaryResponse with total value and per-class breakdown.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+    """
+    from app.models.user import User
+
+    _current_user: User = get_current_user(credentials, session)
+    service = SummaryService(session)
+    return service.get_wealth_summary()
