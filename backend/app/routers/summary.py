@@ -7,7 +7,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.database import get_db
+from app.repositories.user import UserRepository
 from app.schemas.portfolio import (
+    CryptoPricesResponse,
     DiversificationResponse,
     DividendSummaryResponse,
     DividendTimelineResponse,
@@ -16,7 +18,6 @@ from app.schemas.portfolio import (
     RiskAssessmentResponse,
     WealthSummaryResponse,
 )
-from app.repositories.user import UserRepository
 from app.services.auth import get_current_user
 from app.services.summary import SummaryService
 
@@ -222,3 +223,37 @@ def get_emergency_fund(
     monthly_expenses: float = getattr(user, "monthly_expenses", None) or 0.0
     service = SummaryService(session)
     return service.get_emergency_fund(monthly_expenses)
+
+
+@router.get("/crypto-prices", response_model=CryptoPricesResponse)
+def get_crypto_prices(
+    currency: str = Query(default="PLN", max_length=10),
+    session: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> CryptoPricesResponse:
+    """Return live BTC and ETH prices from CoinGecko.
+
+    Args:
+        currency: Target currency code (default PLN).
+        session: Database session.
+        credentials: Bearer token credentials.
+
+    Returns:
+        CryptoPricesResponse with BTC and ETH prices.
+
+    Raises:
+        HTTPException 401: Missing or invalid token.
+        HTTPException 502: CoinGecko upstream request failed.
+    """
+    from fastapi import HTTPException, status
+
+    from app.services.crypto_prices import fetch_crypto_prices
+
+    _current_user = get_current_user(credentials, session)
+    try:
+        return fetch_crypto_prices(currency)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc

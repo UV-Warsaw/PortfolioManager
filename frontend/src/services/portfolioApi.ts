@@ -205,3 +205,22 @@ export async function getEmergencyFund(token: string): Promise<EmergencyFundResp
   }
   return res.json() as Promise<EmergencyFundResponse>
 }
+
+export interface CryptoPricesResponse {
+  BTC: number
+  ETH: number
+  currency: string
+}
+
+export async function getCryptoPrices(
+  token: string,
+  currency = 'PLN',
+): Promise<CryptoPricesResponse> {
+  const res = await fetch(`${API_URL}/summary/crypto-prices?currency=${currency}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch crypto prices: ${res.status}`)
+  }
+  return res.json() as Promise<CryptoPricesResponse>
+}

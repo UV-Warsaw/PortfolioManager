@@ -197,3 +197,16 @@ class EmergencyFundResponse(BaseModel):
 
     has_data: bool
     """False when the portfolio is empty (no assets)."""
+
+
+class CryptoPricesResponse(BaseModel):
+    """Live BTC and ETH prices from CoinGecko."""
+
+    BTC: float
+    """Current BTC price in the requested currency."""
+
+    ETH: float
+    """Current ETH price in the requested currency."""
+
+    currency: str
+    """Currency the prices are denominated in (e.g. 'PLN')."""

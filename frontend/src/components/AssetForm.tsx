@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react'
 import type { OtherAsset, OtherAssetClass, OtherAssetCreate, OtherAssetUpdate } from '../services/assetsApi'
+import { getCryptoPrices } from '../services/portfolioApi'
 
 interface AssetFormProps {
   asset?: OtherAsset
@@ -12,6 +13,7 @@ interface AssetFormProps {
   onSubmit: (data: OtherAssetCreate | OtherAssetUpdate) => Promise<void>
   onCancel: () => void
   isLoading?: boolean
+  token?: string
 }
 
 const ASSET_CLASSES: OtherAssetClass[] = ['Crypto', 'Real Estate', 'Other']
@@ -46,6 +48,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   onSubmit,
   onCancel,
   isLoading = false,
+  token,
 }) => {
   const defaultClass = asset?.asset_class ?? initialAssetClass ?? 'Crypto'
   const [name, setName] = useState(asset?.name ?? (defaultClass === 'Crypto' ? 'BTC' : ''))
@@ -61,6 +64,24 @@ export const AssetForm: React.FC<AssetFormProps> = ({
   )
   const [notes, setNotes] = useState(asset?.notes ?? '')
   const [error, setError] = useState('')
+  const [fetchingPrice, setFetchingPrice] = useState(false)
+  const [priceSource, setPriceSource] = useState<string | null>(null)
+
+  const fetchLivePrice = async () => {
+    if (!token) return
+    setFetchingPrice(true)
+    setPriceSource(null)
+    try {
+      const prices = await getCryptoPrices(token, currency)
+      const price = name === 'BTC' ? prices.BTC : prices.ETH
+      setCurrentValue(String(price))
+      setPriceSource(`Live price from CoinGecko (${prices.currency})`)
+    } catch {
+      setError('Could not fetch live price. Please enter it manually.')
+    } finally {
+      setFetchingPrice(false)
+    }
+  }
 
   // When editing, sync state if asset prop changes
   useEffect(() => {
@@ -238,7 +259,7 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             style={inputStyle}
             type="number"
             value={currentValue}
-            onChange={(e) => setCurrentValue(e.target.value)}
+            onChange={(e) => { setCurrentValue(e.target.value); setPriceSource(null) }}
             placeholder={
               isCrypto
                 ? 'Current market price per coin'
@@ -250,14 +271,41 @@ export const AssetForm: React.FC<AssetFormProps> = ({
             step="any"
             required
           />
-          {isCrypto ? (
-            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
-              Enter the current price per coin — update manually when price changes
+          {isCrypto && token !== undefined && (
+            <button
+              type="button"
+              onClick={() => { void fetchLivePrice() }}
+              disabled={fetchingPrice}
+              style={{
+                marginTop: '6px',
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '5px 12px',
+                borderRadius: '6px',
+                background: fetchingPrice ? 'rgba(99,102,241,0.06)' : 'rgba(99,102,241,0.12)',
+                border: '1px solid rgba(99,102,241,0.3)',
+                color: fetchingPrice ? 'var(--text-tertiary)' : '#6366f1',
+                cursor: fetchingPrice ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {fetchingPrice ? 'Fetching…' : `Fetch live ${name} price`}
+            </button>
+          )}
+          {priceSource !== null && (
+            <span style={{ fontSize: '11px', color: '#34d399', marginTop: '3px', display: 'block' }}>
+              ✓ {priceSource}
             </span>
-          ) : (
-            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
-              No automatic pricing — update manually when value changes
-            </span>
+          )}
+          {!priceSource && (
+            isCrypto ? (
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
+                {token !== undefined ? 'Or enter manually' : 'Enter the current price per coin'}
+              </span>
+            ) : (
+              <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px', display: 'block' }}>
+                No automatic pricing — update manually when value changes
+              </span>
+            )
           )}
         </div>
 
