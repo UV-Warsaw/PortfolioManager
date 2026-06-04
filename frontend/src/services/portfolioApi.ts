@@ -139,3 +139,23 @@ export async function getWealthSummary(token: string): Promise<WealthSummary> {
   }
   return res.json() as Promise<WealthSummary>
 }
+
+export interface RiskAssessment {
+  portfolio_risk: 'conservative' | 'moderate' | 'aggressive'
+  user_preference: string
+  is_aligned: boolean
+  high_pct: number
+  medium_pct: number
+  low_pct: number
+  has_data: boolean
+}
+
+export async function getRiskAssessment(token: string): Promise<RiskAssessment> {
+  const res = await fetch(`${API_URL}/summary/risk`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to fetch risk assessment: ${res.status}`)
+  }
+  return res.json() as Promise<RiskAssessment>
+}
