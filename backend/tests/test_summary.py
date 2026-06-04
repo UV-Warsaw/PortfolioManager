@@ -585,7 +585,9 @@ class TestDiversificationService:
         assert result.is_diversified is True
         assert result.recommendations == []
 
-    def test_diversified_portfolio_no_recommendations(self, db_session: Session) -> None:
+    def test_diversified_portfolio_no_recommendations(
+        self, db_session: Session
+    ) -> None:
         """Portfolio below threshold → empty recommendations list."""
         # 400 cash (40%) + 400 crypto (40%) → neither exceeds 70%
         _make_cash_account(db_session, balance=400.0)
@@ -595,7 +597,9 @@ class TestDiversificationService:
         assert result.is_diversified is True
         assert result.recommendations == []
 
-    def test_concentrated_cash_triggers_recommendation(self, db_session: Session) -> None:
+    def test_concentrated_cash_triggers_recommendation(
+        self, db_session: Session
+    ) -> None:
         """100% cash → one recommendation with link_to='cash'."""
         _make_cash_account(db_session, balance=1000.0)
         result = SummaryService(db_session).get_diversification_recommendations()
@@ -606,7 +610,9 @@ class TestDiversificationService:
         assert rec.link_to == "cash"
         assert rec.percentage == 100.0
 
-    def test_recommendation_problem_contains_percentage(self, db_session: Session) -> None:
+    def test_recommendation_problem_contains_percentage(
+        self, db_session: Session
+    ) -> None:
         """Problem string includes the percentage value."""
         _make_cash_account(db_session, balance=1000.0)
         result = SummaryService(db_session).get_diversification_recommendations()
@@ -619,7 +625,9 @@ class TestDiversificationService:
         result = SummaryService(db_session).get_diversification_recommendations()
         assert result.recommendations[0].action != ""
 
-    def test_concentrated_crypto_triggers_recommendation(self, db_session: Session) -> None:
+    def test_concentrated_crypto_triggers_recommendation(
+        self, db_session: Session
+    ) -> None:
         """100% crypto → recommendation with link_to='crypto'."""
         _make_crypto(db_session, price=500.0, qty=2.0)
         result = SummaryService(db_session).get_diversification_recommendations()
