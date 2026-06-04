@@ -251,8 +251,8 @@ const App: React.FC = () => {
         <button
           type="button"
           className="sm:hidden btn-cinematic"
-          onClick={() => setNavOpen(true)}
-          aria-label="Open navigation"
+          onClick={() => setNavOpen((v) => !v)}
+          aria-label="Toggle navigation"
           aria-expanded={navOpen}
         >
           <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
