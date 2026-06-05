@@ -262,5 +262,7 @@ def get_dividends_timeline_endpoint(
                 status_code=400,
                 detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
             )
-    timeline = get_dividend_timeline(session, year=year, account=acc, user_id=_current_user["id"])
+    timeline = get_dividend_timeline(
+        session, year=year, account=acc, user_id=_current_user["id"]
+    )
     return [DividendTimelineResponse(**item) for item in timeline]

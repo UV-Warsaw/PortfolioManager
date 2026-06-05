@@ -28,7 +28,9 @@ def get_active_holdings(
     return sorted(holdings, key=lambda h: (h.account, h.ticker))
 
 
-def get_portfolio_value(session: Session, user_id: int | None = None) -> PortfolioValueResponse:
+def get_portfolio_value(
+    session: Session, user_id: int | None = None
+) -> PortfolioValueResponse:
     """Return current market value per account for the given user."""
     repo = TransactionRepository(session)
     accounts = repo.get_account_values(user_id=user_id)
@@ -53,7 +55,9 @@ def get_portfolio_value(session: Session, user_id: int | None = None) -> Portfol
     return response
 
 
-def get_top_holdings(session: Session, limit: int = 10, user_id: int | None = None) -> TopHoldingsResponse:
+def get_top_holdings(
+    session: Session, limit: int = 10, user_id: int | None = None
+) -> TopHoldingsResponse:
     """Return the top holdings by current market value for the given user."""
     repo = TransactionRepository(session)
     rows = repo.get_top_holdings(limit=limit, user_id=user_id)
@@ -64,14 +68,19 @@ def get_top_holdings(session: Session, limit: int = 10, user_id: int | None = No
     return TopHoldingsResponse(items=items)
 
 
-def get_dividend_summary(session: Session, account: str | None = None, user_id: int | None = None) -> list[dict]:
+def get_dividend_summary(
+    session: Session, account: str | None = None, user_id: int | None = None
+) -> list[dict]:
     """Get dividend summary grouped by year for the given user."""
     repo = DividendRepository(session)
     return repo.get_yearly_summary(account=account, user_id=user_id)
 
 
 def get_dividend_timeline(
-    session: Session, year: int | None = None, account: str | None = None, user_id: int | None = None
+    session: Session,
+    year: int | None = None,
+    account: str | None = None,
+    user_id: int | None = None,
 ) -> list[dict]:
     """Get dividend timeline by month for the given user."""
     repo = DividendRepository(session)

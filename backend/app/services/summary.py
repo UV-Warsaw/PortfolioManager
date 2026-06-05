@@ -111,7 +111,9 @@ class SummaryService:
         Returns:
             List of DividendSummaryResponse ordered by year.
         """
-        summaries = self.div_repo.get_yearly_summary(account=account, user_id=self.user_id)
+        summaries = self.div_repo.get_yearly_summary(
+            account=account, user_id=self.user_id
+        )
         return [
             DividendSummaryResponse(year=s["year"], total=s["total"]) for s in summaries
         ]
@@ -128,7 +130,9 @@ class SummaryService:
         Returns:
             List of DividendTimelineResponse ordered by month.
         """
-        timelines = self.div_repo.get_monthly_timeline(year=year, account=account, user_id=self.user_id)
+        timelines = self.div_repo.get_monthly_timeline(
+            year=year, account=account, user_id=self.user_id
+        )
         return [
             DividendTimelineResponse(month=t["month"], total=t["total"])
             for t in timelines

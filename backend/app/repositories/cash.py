@@ -19,10 +19,16 @@ class CashRepository(BaseRepository[CashAccount]):
 
     def list_all(self, user_id: int) -> list[CashAccount]:
         """Get all cash accounts for the given user ordered by creation date."""
-        stmt = select(CashAccount).where(CashAccount.user_id == user_id).order_by(CashAccount.created_at.desc())
+        stmt = (
+            select(CashAccount)
+            .where(CashAccount.user_id == user_id)
+            .order_by(CashAccount.created_at.desc())
+        )
         return list(self.session.exec(stmt).all())
 
     def get_by_name(self, name: str, user_id: int) -> CashAccount | None:
         """Get a cash account by name scoped to the given user."""
-        stmt = select(CashAccount).where(CashAccount.name == name, CashAccount.user_id == user_id)
+        stmt = select(CashAccount).where(
+            CashAccount.name == name, CashAccount.user_id == user_id
+        )
         return self.session.exec(stmt).first()

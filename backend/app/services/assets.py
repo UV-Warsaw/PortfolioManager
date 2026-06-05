@@ -90,7 +90,10 @@ class OtherAssetService:
 
     def list_all(self) -> list[OtherAssetResponse]:
         """Get all manually-valued assets for the current user."""
-        return [OtherAssetResponse.model_validate(a) for a in self.repo.list_all(self.user_id)]
+        return [
+            OtherAssetResponse.model_validate(a)
+            for a in self.repo.list_all(self.user_id)
+        ]
 
     def update(
         self, asset_id: int, data: OtherAssetUpdate

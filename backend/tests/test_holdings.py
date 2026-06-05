@@ -12,6 +12,9 @@ from app.services.portfolio import get_active_holdings
 # Helpers
 # ---------------------------------------------------------------------------
 
+# Fixed user id for unit tests that seed data directly via the repository.
+TEST_USER_ID = 1
+
 
 def _make_tx(
     ticker: str = "AAPL",
@@ -54,11 +57,12 @@ def test_delete_by_account_removes_records(db_session: Session) -> None:
     """delete_by_account removes all transactions for the target account."""
     repo = TransactionRepository(db_session)
     repo.bulk_create(
-        [_make_tx("AAPL", 5.0, account="PLN"), _make_tx("MSFT", 3.0, account="PLN")]
+        [_make_tx("AAPL", 5.0, account="PLN"), _make_tx("MSFT", 3.0, account="PLN")],
+        user_id=TEST_USER_ID,
     )
-    repo.bulk_create([_make_tx("TSLA", 2.0, account="IKE")])
+    repo.bulk_create([_make_tx("TSLA", 2.0, account="IKE")], user_id=TEST_USER_ID)
 
-    deleted = repo.delete_by_account("PLN")
+    deleted = repo.delete_by_account("PLN", user_id=TEST_USER_ID)
 
     assert deleted == 2
     assert repo.get_holdings(account="PLN") == []
@@ -70,7 +74,7 @@ def test_delete_by_account_removes_records(db_session: Session) -> None:
 def test_delete_by_account_returns_zero_when_none(db_session: Session) -> None:
     """delete_by_account returns 0 when no records exist for the account."""
     repo = TransactionRepository(db_session)
-    deleted = repo.delete_by_account("USD")
+    deleted = repo.delete_by_account("USD", user_id=TEST_USER_ID)
     assert deleted == 0
 
 
@@ -79,11 +83,11 @@ def test_delete_by_account_reimport_replaces_data(db_session: Session) -> None:
     repo = TransactionRepository(db_session)
     records = [_make_tx("AAPL", 10.0, account="PLN")]
 
-    repo.delete_by_account("PLN")
-    repo.bulk_create(records)
+    repo.delete_by_account("PLN", user_id=TEST_USER_ID)
+    repo.bulk_create(records, user_id=TEST_USER_ID)
     # Simulate re-import: delete then insert again
-    repo.delete_by_account("PLN")
-    repo.bulk_create(records)
+    repo.delete_by_account("PLN", user_id=TEST_USER_ID)
+    repo.bulk_create(records, user_id=TEST_USER_ID)
 
     holdings = repo.get_holdings(account="PLN")
     assert len(holdings) == 1
@@ -98,7 +102,10 @@ def test_delete_by_account_reimport_replaces_data(db_session: Session) -> None:
 def test_get_holdings_buy_only(db_session: Session) -> None:
     """Holdings equal total bought quantity when no sells exist."""
     repo = TransactionRepository(db_session)
-    repo.bulk_create([_make_tx("AAPL", 10.0, "BUY"), _make_tx("AAPL", 5.0, "BUY")])
+    repo.bulk_create(
+        [_make_tx("AAPL", 10.0, "BUY"), _make_tx("AAPL", 5.0, "BUY")],
+        user_id=TEST_USER_ID,
+    )
     holdings = repo.get_holdings()
     assert len(holdings) == 1
     assert holdings[0]["ticker"] == "AAPL"
@@ -112,7 +119,8 @@ def test_get_holdings_buy_minus_sell(db_session: Session) -> None:
         [
             _make_tx("AAPL", 10.0, "BUY"),
             _make_tx("AAPL", 3.0, "SELL"),
-        ]
+        ],
+        user_id=TEST_USER_ID,
     )
     holdings = repo.get_holdings()
     assert len(holdings) == 1
@@ -126,7 +134,8 @@ def test_get_holdings_fully_sold_excluded(db_session: Session) -> None:
         [
             _make_tx("AAPL", 5.0, "BUY"),
             _make_tx("AAPL", 5.0, "SELL"),
-        ]
+        ],
+        user_id=TEST_USER_ID,
     )
     holdings = repo.get_holdings()
     assert holdings == []
@@ -139,7 +148,8 @@ def test_get_holdings_filtered_by_account(db_session: Session) -> None:
         [
             _make_tx("AAPL", 5.0, account="PLN"),
             _make_tx("MSFT", 3.0, account="IKE"),
-        ]
+        ],
+        user_id=TEST_USER_ID,
     )
     pln = repo.get_holdings(account="PLN")
     assert len(pln) == 1
@@ -159,7 +169,8 @@ def test_get_active_holdings_sorted(db_session: Session) -> None:
             _make_tx("TSLA", 2.0, account="PLN"),
             _make_tx("AAPL", 5.0, account="PLN"),
             _make_tx("MSFT", 1.0, account="IKE"),
-        ]
+        ],
+        user_id=TEST_USER_ID,
     )
     holdings = get_active_holdings(db_session)
     tickers = [h.ticker for h in holdings]

@@ -37,7 +37,7 @@ def request_password_reset(email: str, session: Session) -> None:
         logger.debug("Password reset requested for unknown email: %s", email)
         return
 
-    raw_code = f"{secrets.randbelow(10 ** _CODE_DIGITS):0{_CODE_DIGITS}d}"
+    raw_code = f"{secrets.randbelow(10**_CODE_DIGITS):0{_CODE_DIGITS}d}"
     expires_at = (
         datetime.now(UTC) + timedelta(hours=settings.password_reset_expire_hours)
     ).isoformat()

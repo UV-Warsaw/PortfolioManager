@@ -75,7 +75,11 @@ class TransactionRepository(BaseRepository[Transaction]):
             if isinstance(date_val, str):
                 date_val = datetime.fromisoformat(date_val)
             if self._exists(
-                date_val, rec.get("ticker"), rec.get("quantity"), rec.get("account"), user_id
+                date_val,
+                rec.get("ticker"),
+                rec.get("quantity"),
+                rec.get("account"),
+                user_id,
             ):
                 skipped += 1
                 continue
@@ -102,12 +106,16 @@ class TransactionRepository(BaseRepository[Transaction]):
         """Delete all transactions for the given user+account and return deleted row count."""
         from sqlmodel import delete as sql_delete
 
-        stmt = sql_delete(Transaction).where(Transaction.account == account, Transaction.user_id == user_id)
+        stmt = sql_delete(Transaction).where(
+            Transaction.account == account, Transaction.user_id == user_id
+        )
         result = self.session.exec(stmt)
         self.session.commit()
         return result.rowcount
 
-    def get_holdings(self, account: str | None = None, user_id: int | None = None) -> list[dict]:
+    def get_holdings(
+        self, account: str | None = None, user_id: int | None = None
+    ) -> list[dict]:
         """Return active holdings aggregated per ticker and account.
 
         Buy quantities are summed; sell quantities are subtracted.
@@ -191,7 +199,9 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[0] is not None and row[1] is not None
         }
 
-    def get_top_holdings(self, limit: int = 10, user_id: int | None = None) -> list[tuple[str, float]]:
+    def get_top_holdings(
+        self, limit: int = 10, user_id: int | None = None
+    ) -> list[tuple[str, float]]:
         """Return the top N holdings by current market value for the given user."""
         market_val = func.sum(Transaction.market_price * Transaction.quantity).label(
             "market_value"
@@ -268,12 +278,16 @@ class DividendRepository(BaseRepository[Dividend]):
         """Delete all dividends for the given user+account."""
         from sqlmodel import delete as sql_delete
 
-        stmt = sql_delete(Dividend).where(Dividend.account == account, Dividend.user_id == user_id)
+        stmt = sql_delete(Dividend).where(
+            Dividend.account == account, Dividend.user_id == user_id
+        )
         result = self.session.exec(stmt)
         self.session.commit()
         return result.rowcount
 
-    def bulk_create_with_dedup(self, records: list[dict], user_id: int) -> tuple[list[Dividend], int]:
+    def bulk_create_with_dedup(
+        self, records: list[dict], user_id: int
+    ) -> tuple[list[Dividend], int]:
         """Insert dividends, skipping duplicates keyed by (date, ticker, amount, account)."""
         created: list[Dividend] = []
         skipped = 0
@@ -282,7 +296,11 @@ class DividendRepository(BaseRepository[Dividend]):
             if isinstance(date_val, str):
                 date_val = datetime.fromisoformat(date_val)
             if self._exists(
-                date_val, rec.get("ticker"), rec.get("amount"), rec.get("account"), user_id
+                date_val,
+                rec.get("ticker"),
+                rec.get("amount"),
+                rec.get("account"),
+                user_id,
             ):
                 skipped += 1
                 continue
@@ -302,7 +320,9 @@ class DividendRepository(BaseRepository[Dividend]):
             self.session.refresh(div)
         return created, skipped
 
-    def get_yearly_summary(self, account: str | None = None, user_id: int | None = None) -> list[dict]:
+    def get_yearly_summary(
+        self, account: str | None = None, user_id: int | None = None
+    ) -> list[dict]:
         """Get yearly dividend summary for the given user."""
         from sqlalchemy import extract
 
@@ -325,7 +345,10 @@ class DividendRepository(BaseRepository[Dividend]):
         ]
 
     def get_monthly_timeline(
-        self, year: int | None = None, account: str | None = None, user_id: int | None = None
+        self,
+        year: int | None = None,
+        account: str | None = None,
+        user_id: int | None = None,
     ) -> list[dict]:
         """Get monthly dividend timeline for the given user."""
         from sqlalchemy import extract

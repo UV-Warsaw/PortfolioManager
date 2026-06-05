@@ -1,6 +1,5 @@
 """Repository for user data access."""
 
-
 from sqlmodel import Session, select
 
 from ..models.user import User

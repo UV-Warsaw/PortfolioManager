@@ -105,7 +105,9 @@ class CashService:
         Returns:
             List of all cash accounts as CashResponse objects.
         """
-        return [CashResponse.model_validate(a) for a in self.repo.list_all(self.user_id)]
+        return [
+            CashResponse.model_validate(a) for a in self.repo.list_all(self.user_id)
+        ]
 
     def update(self, account_id: int, data: CashUpdate) -> CashResponse | None:
         """Update an existing cash account.

@@ -26,7 +26,11 @@ class BondRepository(BaseRepository[Bond]):
 
     def list_all(self, user_id: int) -> list[Bond]:
         """Get all bonds for the given user ordered by purchase date (newest first)."""
-        stmt = select(Bond).where(Bond.user_id == user_id).order_by(Bond.purchase_date.desc())
+        stmt = (
+            select(Bond)
+            .where(Bond.user_id == user_id)
+            .order_by(Bond.purchase_date.desc())
+        )
         return self.session.exec(stmt).all()
 
     def get_total_value(self, user_id: int) -> float:
