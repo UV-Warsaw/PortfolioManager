@@ -28,6 +28,6 @@ class OtherAsset(SQLModel, table=True):
     # Optional real estate field
     mortgage_remaining: float | None = Field(default=None)
     notes: str | None = Field(default=None)
-    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default=None)

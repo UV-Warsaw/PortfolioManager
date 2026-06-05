@@ -24,7 +24,7 @@ class Transaction(SQLModel, table=True):
     amount: float | None = Field(default=None)
     raw: str | None = Field(default=None)
     account: str | None = Field(default=None, index=True)
-    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
 
 
 class Dividend(SQLModel, table=True):
@@ -37,4 +37,4 @@ class Dividend(SQLModel, table=True):
     currency: str | None = Field(default=None)
     raw: str | None = Field(default=None)
     account: str | None = Field(default=None, index=True)
-    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)

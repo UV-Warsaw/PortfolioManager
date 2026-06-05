@@ -25,6 +25,6 @@ class Bond(SQLModel, table=True):
     redemption_price: float | None = Field(default=None)  # Renamed from current_price
     quantity: int = Field(default=1)
     purchase_date: datetime = Field()
-    user_id: int | None = Field(default=None, foreign_key="user.id", index=True)
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default=None)
