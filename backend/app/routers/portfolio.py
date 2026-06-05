@@ -7,7 +7,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
 from app.core.database import get_db
-from app.models.user import User
 from app.repositories.portfolio import DividendRepository, TransactionRepository
 from app.schemas.portfolio import (
     DividendSummaryResponse,

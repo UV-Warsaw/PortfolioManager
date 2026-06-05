@@ -16,8 +16,9 @@ TEST_USER_ID = 1
 
 def _user_id_by_email(session: Session, email: str) -> int:
     """Return the id of a registered user by email (for seeding owned data)."""
-    from app.models.user import User
     from sqlmodel import select
+
+    from app.models.user import User
 
     return session.exec(select(User).where(User.email == email)).one().id
 

@@ -51,7 +51,6 @@ def get_dashboard(
         HTTPException 401: Missing or invalid token.
         HTTPException 400: Invalid account value.
     """
-    from app.models.user import User
 
     current_user = get_current_user(credentials, session)
     service = SummaryService(session, current_user["id"])
@@ -79,7 +78,6 @@ def get_dividend_yearly_summary(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
 
     current_user = get_current_user(credentials, session)
     service = SummaryService(session, current_user["id"])
@@ -109,7 +107,6 @@ def get_dividend_timeline(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
 
     current_user = get_current_user(credentials, session)
     service = SummaryService(session, current_user["id"])
@@ -135,7 +132,6 @@ def get_wealth_summary(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
 
     current_user = get_current_user(credentials, session)
     service = SummaryService(session, current_user["id"])
@@ -192,7 +188,6 @@ def get_diversification(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    from app.models.user import User
 
     current_user = get_current_user(credentials, session)
     service = SummaryService(session, current_user["id"])
