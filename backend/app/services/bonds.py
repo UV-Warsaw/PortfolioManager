@@ -12,14 +12,10 @@ from app.schemas.bonds import BondCreate, BondResponse, BondUpdate
 class BondService:
     """Service for Bond business operations."""
 
-    def __init__(self, session: Session):
-        """Initialize BondService.
-
-        Args:
-            session: SQLModel database session.
-        """
+    def __init__(self, session: Session, user_id: int):
         self.repo = BondRepository(session)
         self.session = session
+        self.user_id = user_id
 
     def create_bond(self, data: BondCreate) -> BondResponse:
         """Create a new bond.
@@ -33,7 +29,7 @@ class BondService:
         Raises:
             ValueError: If a bond with the same name already exists.
         """
-        existing = self.repo.get_by_name(data.name)
+        existing = self.repo.get_by_name(data.name, self.user_id)
         if existing:
             raise ValueError(f"Bond '{data.name}' already exists")
 
@@ -46,6 +42,7 @@ class BondService:
             redemption_price=data.redemption_price,
             quantity=data.quantity,
             purchase_date=data.purchase_date,
+            user_id=self.user_id,
         )
         self.repo.create(bond)
         return BondResponse.model_validate(bond)
@@ -59,7 +56,7 @@ class BondService:
         Returns:
             The bond as BondResponse, or None if not found.
         """
-        bond = self.repo.get_by_id_for_user(bond_id)
+        bond = self.repo.get_by_id_for_user(bond_id, self.user_id)
         return BondResponse.model_validate(bond) if bond else None
 
     def list_bonds(self) -> list[BondResponse]:
@@ -68,7 +65,7 @@ class BondService:
         Returns:
             List of all bonds as BondResponse objects.
         """
-        bonds = self.repo.list_all()
+        bonds = self.repo.list_all(self.user_id)
         return [BondResponse.model_validate(b) for b in bonds]
 
     def update_bond(self, bond_id: int, data: BondUpdate) -> BondResponse | None:
@@ -84,13 +81,13 @@ class BondService:
         Raises:
             ValueError: If updating name to one that already exists.
         """
-        bond = self.repo.get_by_id_for_user(bond_id)
+        bond = self.repo.get_by_id_for_user(bond_id, self.user_id)
         if not bond:
             return None
 
         # Check if updating to existing name
         if data.name and data.name != bond.name:
-            existing = self.repo.get_by_name(data.name)
+            existing = self.repo.get_by_name(data.name, self.user_id)
             if existing:
                 raise ValueError(f"Bond '{data.name}' already exists")
 
@@ -125,7 +122,7 @@ class BondService:
         Returns:
             True if deleted, False if not found.
         """
-        bond = self.repo.get_by_id_for_user(bond_id)
+        bond = self.repo.get_by_id_for_user(bond_id, self.user_id)
         if not bond:
             return False
         self.repo.delete(bond)
@@ -137,4 +134,4 @@ class BondService:
         Returns:
             Total value (current_price * quantity for all bonds).
         """
-        return self.repo.get_total_value()
+        return self.repo.get_total_value(self.user_id)

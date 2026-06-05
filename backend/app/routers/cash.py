@@ -30,9 +30,9 @@ def create_cash_account(
     Raises:
         400: If an account with the same name already exists.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        return CashService(session).create(data)
+        return CashService(session, current_user["id"]).create(data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -43,8 +43,8 @@ def list_cash_accounts(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> list[CashResponse]:
     """Get all cash accounts."""
-    get_current_user(credentials, session)
-    return CashService(session).list_all()
+    current_user = get_current_user(credentials, session)
+    return CashService(session, current_user["id"]).list_all()
 
 
 @router.get("/summary", response_model=CashPortfolioSummaryResponse)
@@ -53,8 +53,8 @@ def get_portfolio_summary(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> CashPortfolioSummaryResponse:
     """Get aggregated cash portfolio summary."""
-    get_current_user(credentials, session)
-    return CashService(session).portfolio_summary()
+    current_user = get_current_user(credentials, session)
+    return CashService(session, current_user["id"]).portfolio_summary()
 
 
 @router.get("/{account_id}", response_model=CashResponse)
@@ -68,8 +68,8 @@ def get_cash_account(
     Raises:
         404: If account not found.
     """
-    get_current_user(credentials, session)
-    account = CashService(session).get(account_id)
+    current_user = get_current_user(credentials, session)
+    account = CashService(session, current_user["id"]).get(account_id)
     if not account:
         raise HTTPException(
             status_code=404, detail=f"Cash account {account_id} not found"
@@ -88,8 +88,8 @@ def get_cash_account_analysis(
     Raises:
         404: If account not found.
     """
-    get_current_user(credentials, session)
-    analysis = CashService(session).analyze(account_id)
+    current_user = get_current_user(credentials, session)
+    analysis = CashService(session, current_user["id"]).analyze(account_id)
     if not analysis:
         raise HTTPException(
             status_code=404, detail=f"Cash account {account_id} not found"
@@ -110,9 +110,9 @@ def update_cash_account(
         400: If updating name to one that already exists.
         404: If account not found.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        account = CashService(session).update(account_id, data)
+        account = CashService(session, current_user["id"]).update(account_id, data)
         if not account:
             raise HTTPException(
                 status_code=404, detail=f"Cash account {account_id} not found"
@@ -133,8 +133,8 @@ def delete_cash_account(
     Raises:
         404: If account not found.
     """
-    get_current_user(credentials, session)
-    if not CashService(session).delete(account_id):
+    current_user = get_current_user(credentials, session)
+    if not CashService(session, current_user["id"]).delete(account_id):
         raise HTTPException(
             status_code=404, detail=f"Cash account {account_id} not found"
         )

@@ -30,9 +30,9 @@ def create_asset(
     Raises:
         400: If an asset with the same name already exists.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        return OtherAssetService(session).create(data)
+        return OtherAssetService(session, current_user["id"]).create(data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -43,8 +43,8 @@ def list_assets(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> list[OtherAssetResponse]:
     """Get all manually-valued assets."""
-    get_current_user(credentials, session)
-    return OtherAssetService(session).list_all()
+    current_user = get_current_user(credentials, session)
+    return OtherAssetService(session, current_user["id"]).list_all()
 
 
 @router.get("/summary", response_model=OtherAssetsPortfolioSummaryResponse)
@@ -53,8 +53,8 @@ def get_portfolio_summary(
     credentials: HTTPAuthorizationCredentials = Depends(_bearer),
 ) -> OtherAssetsPortfolioSummaryResponse:
     """Get aggregated manually-valued assets portfolio summary."""
-    get_current_user(credentials, session)
-    return OtherAssetService(session).portfolio_summary()
+    current_user = get_current_user(credentials, session)
+    return OtherAssetService(session, current_user["id"]).portfolio_summary()
 
 
 @router.get("/{asset_id}", response_model=OtherAssetResponse)
@@ -68,8 +68,8 @@ def get_asset(
     Raises:
         404: If asset not found.
     """
-    get_current_user(credentials, session)
-    asset = OtherAssetService(session).get(asset_id)
+    current_user = get_current_user(credentials, session)
+    asset = OtherAssetService(session, current_user["id"]).get(asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
     return asset
@@ -86,8 +86,8 @@ def get_asset_analysis(
     Raises:
         404: If asset not found.
     """
-    get_current_user(credentials, session)
-    analysis = OtherAssetService(session).analyze(asset_id)
+    current_user = get_current_user(credentials, session)
+    analysis = OtherAssetService(session, current_user["id"]).analyze(asset_id)
     if not analysis:
         raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
     return analysis
@@ -106,9 +106,9 @@ def update_asset(
         400: If updating name to one that already exists.
         404: If asset not found.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        asset = OtherAssetService(session).update(asset_id, data)
+        asset = OtherAssetService(session, current_user["id"]).update(asset_id, data)
         if not asset:
             raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
         return asset
@@ -127,6 +127,6 @@ def delete_asset(
     Raises:
         404: If asset not found.
     """
-    get_current_user(credentials, session)
-    if not OtherAssetService(session).delete(asset_id):
+    current_user = get_current_user(credentials, session)
+    if not OtherAssetService(session, current_user["id"]).delete(asset_id):
         raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")

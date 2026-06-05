@@ -60,7 +60,8 @@ async def upload_portfolio_file(
         HTTPException 400: Invalid account type or unsupported file format.
         HTTPException 500: Unexpected parsing or database error.
     """
-    _current_user: User = get_current_user(credentials, session)
+    _current_user = get_current_user(credentials, session)
+    user_id = _current_user["id"]
     acc = account.upper()
     if acc not in VALID_ACCOUNTS:
         raise HTTPException(
@@ -86,10 +87,10 @@ async def upload_portfolio_file(
     try:
         tx_repo = TransactionRepository(session)
         div_repo = DividendRepository(session)
-        tx_repo.delete_by_account(acc)
-        div_repo.delete_by_account(acc)
-        created_tx = tx_repo.bulk_create(records["transactions"])
-        created_div = div_repo.bulk_create(records["dividends"])
+        tx_repo.delete_by_account(acc, user_id)
+        div_repo.delete_by_account(acc, user_id)
+        created_tx = tx_repo.bulk_create(records["transactions"], user_id)
+        created_div = div_repo.bulk_create(records["dividends"], user_id)
     except Exception as exc:
         logger.exception("Database insert failed")
         raise HTTPException(status_code=500, detail="Failed to save records") from exc
@@ -125,7 +126,7 @@ def get_holdings(
         HTTPException 401: Missing or invalid token.
         HTTPException 400: Invalid account value.
     """
-    _current_user: User = get_current_user(credentials, session)
+    _current_user = get_current_user(credentials, session)
     acc: str | None = None
     if account is not None:
         acc = account.upper()
@@ -134,7 +135,7 @@ def get_holdings(
                 status_code=400,
                 detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
             )
-    return get_active_holdings(session, account=acc)
+    return get_active_holdings(session, account=acc, user_id=_current_user["id"])
 
 
 @router.get("/value", response_model=PortfolioValueResponse)
@@ -157,8 +158,8 @@ def get_portfolio_value_endpoint(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    get_current_user(credentials, session)
-    return get_portfolio_value(session)
+    current_user = get_current_user(credentials, session)
+    return get_portfolio_value(session, user_id=current_user["id"])
 
 
 @router.get("/top-holdings", response_model=TopHoldingsResponse)
@@ -181,8 +182,8 @@ def get_top_holdings_endpoint(
     Raises:
         HTTPException 401: Missing or invalid token.
     """
-    get_current_user(credentials, session)
-    return get_top_holdings(session)
+    current_user = get_current_user(credentials, session)
+    return get_top_holdings(session, user_id=current_user["id"])
 
 
 @router.get("/dividends/summary", response_model=list[DividendSummaryResponse])
@@ -210,7 +211,7 @@ def get_dividends_summary_endpoint(
         HTTPException 401: Missing or invalid token.
         HTTPException 400: Invalid account value.
     """
-    _current_user: User = get_current_user(credentials, session)
+    _current_user = get_current_user(credentials, session)
     acc: str | None = None
     if account is not None:
         acc = account.upper()
@@ -219,7 +220,7 @@ def get_dividends_summary_endpoint(
                 status_code=400,
                 detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
             )
-    summary = get_dividend_summary(session, account=acc)
+    summary = get_dividend_summary(session, account=acc, user_id=_current_user["id"])
     return [DividendSummaryResponse(**item) for item in summary]
 
 
@@ -252,7 +253,7 @@ def get_dividends_timeline_endpoint(
         HTTPException 401: Missing or invalid token.
         HTTPException 400: Invalid account value.
     """
-    _current_user: User = get_current_user(credentials, session)
+    _current_user = get_current_user(credentials, session)
     acc: str | None = None
     if account is not None:
         acc = account.upper()
@@ -261,5 +262,5 @@ def get_dividends_timeline_endpoint(
                 status_code=400,
                 detail=f"account must be one of: {', '.join(VALID_ACCOUNTS)}",
             )
-    timeline = get_dividend_timeline(session, year=year, account=acc)
+    timeline = get_dividend_timeline(session, year=year, account=acc, user_id=_current_user["id"])
     return [DividendTimelineResponse(**item) for item in timeline]

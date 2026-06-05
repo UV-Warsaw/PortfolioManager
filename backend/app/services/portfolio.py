@@ -16,21 +16,11 @@ logger = logging.getLogger("portfolio_backend.services.portfolio")
 
 
 def get_active_holdings(
-    session: Session, account: str | None = None
+    session: Session, account: str | None = None, user_id: int | None = None
 ) -> list[HoldingRead]:
-    """Return active holdings for a given account, or all accounts if none specified.
-
-    Holdings with net quantity <= 0 (fully sold positions) are excluded.
-
-    Args:
-        session: Database session.
-        account: Optional account filter — IKE, PLN, or USD.
-
-    Returns:
-        Sorted list of HoldingRead objects with positive net quantities.
-    """
+    """Return active holdings for the given user."""
     repo = TransactionRepository(session)
-    raw = repo.get_holdings(account=account)
+    raw = repo.get_holdings(account=account, user_id=user_id)
     holdings = [
         HoldingRead(ticker=r["ticker"], account=r["account"], quantity=r["quantity"])
         for r in raw
@@ -38,25 +28,13 @@ def get_active_holdings(
     return sorted(holdings, key=lambda h: (h.account, h.ticker))
 
 
-def get_portfolio_value(session: Session) -> PortfolioValueResponse:
-    """Return current market value per account and aggregate total.
-
-    Values represent sum(market_price * quantity) per account for open BUY
-    positions. All prices are stored in PLN — USD transactions are converted
-    at import time.
-
-    Args:
-        session: Database session.
-
-    Returns:
-        PortfolioValueResponse with per-account market values and aggregate total.
-    """
+def get_portfolio_value(session: Session, user_id: int | None = None) -> PortfolioValueResponse:
+    """Return current market value per account for the given user."""
     repo = TransactionRepository(session)
-    accounts = repo.get_account_values()
+    accounts = repo.get_account_values(user_id=user_id)
     total = round(sum(accounts.values()), 2)
 
-    # Also calculate cost basis and profit %
-    cost_basis = repo.get_cost_basis()
+    cost_basis = repo.get_cost_basis(user_id=user_id)
     profit_data = {}
     for account, market_value in accounts.items():
         cost = cost_basis.get(account, 0)
@@ -75,18 +53,10 @@ def get_portfolio_value(session: Session) -> PortfolioValueResponse:
     return response
 
 
-def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
-    """Return the top holdings by current market value.
-
-    Args:
-        session: Database session.
-        limit: Maximum number of holdings to return (default 10).
-
-    Returns:
-        TopHoldingsResponse with items ordered by market value descending.
-    """
+def get_top_holdings(session: Session, limit: int = 10, user_id: int | None = None) -> TopHoldingsResponse:
+    """Return the top holdings by current market value for the given user."""
     repo = TransactionRepository(session)
-    rows = repo.get_top_holdings(limit=limit)
+    rows = repo.get_top_holdings(limit=limit, user_id=user_id)
     items = [
         TopHoldingItem(ticker=ticker, cost_basis=cost_basis)
         for ticker, cost_basis in rows
@@ -94,32 +64,15 @@ def get_top_holdings(session: Session, limit: int = 10) -> TopHoldingsResponse:
     return TopHoldingsResponse(items=items)
 
 
-def get_dividend_summary(session: Session, account: str | None = None) -> list[dict]:
-    """Get dividend summary grouped by year.
-
-    Args:
-        session: Database session.
-        account: Optional account filter (IKE, PLN, USD).
-
-    Returns:
-        List of dicts with 'year' and 'total' keys.
-    """
+def get_dividend_summary(session: Session, account: str | None = None, user_id: int | None = None) -> list[dict]:
+    """Get dividend summary grouped by year for the given user."""
     repo = DividendRepository(session)
-    return repo.get_yearly_summary(account=account)
+    return repo.get_yearly_summary(account=account, user_id=user_id)
 
 
 def get_dividend_timeline(
-    session: Session, year: int | None = None, account: str | None = None
+    session: Session, year: int | None = None, account: str | None = None, user_id: int | None = None
 ) -> list[dict]:
-    """Get dividend timeline by month.
-
-    Args:
-        session: Database session.
-        year: Optional year filter — returns 12 months for that year.
-        account: Optional account filter (IKE, PLN, USD).
-
-    Returns:
-        List of dicts with 'month' and 'total' keys.
-    """
+    """Get dividend timeline by month for the given user."""
     repo = DividendRepository(session)
-    return repo.get_monthly_timeline(year=year, account=account)
+    return repo.get_monthly_timeline(year=year, account=account, user_id=user_id)

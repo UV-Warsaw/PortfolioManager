@@ -53,8 +53,8 @@ def get_dashboard(
     """
     from app.models.user import User
 
-    _current_user: User = get_current_user(credentials, session)
-    service = SummaryService(session)
+    current_user = get_current_user(credentials, session)
+    service = SummaryService(session, current_user["id"])
     return PortfolioSummaryResponse(**service.get_portfolio_summary(account=account))
 
 
@@ -81,8 +81,8 @@ def get_dividend_yearly_summary(
     """
     from app.models.user import User
 
-    _current_user: User = get_current_user(credentials, session)
-    service = SummaryService(session)
+    current_user = get_current_user(credentials, session)
+    service = SummaryService(session, current_user["id"])
     return service.get_dividend_yearly_summary(account=account)
 
 
@@ -111,8 +111,8 @@ def get_dividend_timeline(
     """
     from app.models.user import User
 
-    _current_user: User = get_current_user(credentials, session)
-    service = SummaryService(session)
+    current_user = get_current_user(credentials, session)
+    service = SummaryService(session, current_user["id"])
     return service.get_dividend_monthly_timeline(year=year, account=account)
 
 
@@ -137,8 +137,8 @@ def get_wealth_summary(
     """
     from app.models.user import User
 
-    _current_user: User = get_current_user(credentials, session)
-    service = SummaryService(session)
+    current_user = get_current_user(credentials, session)
+    service = SummaryService(session, current_user["id"])
     return service.get_wealth_summary()
 
 
@@ -167,7 +167,7 @@ def get_risk_assessment(
     current_user_info: dict = get_current_user(credentials, session)
     user = UserRepository(session).get_by_id(current_user_info["id"])
     user_preference: str = getattr(user, "risk_level", None) or "moderate"
-    service = SummaryService(session)
+    service = SummaryService(session, current_user_info["id"])
     return service.get_risk_assessment(user_preference)
 
 
@@ -194,8 +194,8 @@ def get_diversification(
     """
     from app.models.user import User
 
-    _current_user: User = get_current_user(credentials, session)
-    service = SummaryService(session)
+    current_user = get_current_user(credentials, session)
+    service = SummaryService(session, current_user["id"])
     return service.get_diversification_recommendations()
 
 
@@ -221,7 +221,7 @@ def get_emergency_fund(
     current_user_info: dict = get_current_user(credentials, session)
     user = UserRepository(session).get_by_id(current_user_info["id"])
     monthly_expenses: float = getattr(user, "monthly_expenses", None) or 0.0
-    service = SummaryService(session)
+    service = SummaryService(session, current_user_info["id"])
     return service.get_emergency_fund(monthly_expenses)
 
 

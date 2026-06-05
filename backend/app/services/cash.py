@@ -20,13 +20,9 @@ class CashService:
 
     _TAX_RATE: float = 0.19
 
-    def __init__(self, session: Session) -> None:
-        """Initialize CashService.
-
-        Args:
-            session: SQLModel database session.
-        """
+    def __init__(self, session: Session, user_id: int) -> None:
         self.repo = CashRepository(session)
+        self.user_id = user_id
 
     @staticmethod
     def _calculate_interest(
@@ -74,7 +70,7 @@ class CashService:
         Raises:
             ValueError: If an account with the same name already exists.
         """
-        if self.repo.get_by_name(data.name):
+        if self.repo.get_by_name(data.name, self.user_id):
             raise ValueError(f"Cash account '{data.name}' already exists")
 
         account = CashAccount(
@@ -84,6 +80,7 @@ class CashService:
             interest_rate=data.interest_rate,
             bank_name=data.bank_name,
             currency=data.currency,
+            user_id=self.user_id,
         )
         self.repo.create(account)
         return CashResponse.model_validate(account)
@@ -98,7 +95,9 @@ class CashService:
             CashResponse or None if not found.
         """
         account = self.repo.get_by_id(account_id)
-        return CashResponse.model_validate(account) if account else None
+        if not account or account.user_id != self.user_id:
+            return None
+        return CashResponse.model_validate(account)
 
     def list_all(self) -> list[CashResponse]:
         """Get all cash accounts.
@@ -106,7 +105,7 @@ class CashService:
         Returns:
             List of all cash accounts as CashResponse objects.
         """
-        return [CashResponse.model_validate(a) for a in self.repo.list_all()]
+        return [CashResponse.model_validate(a) for a in self.repo.list_all(self.user_id)]
 
     def update(self, account_id: int, data: CashUpdate) -> CashResponse | None:
         """Update an existing cash account.
@@ -122,11 +121,11 @@ class CashService:
             ValueError: If updating name to one that already exists.
         """
         account = self.repo.get_by_id(account_id)
-        if not account:
+        if not account or account.user_id != self.user_id:
             return None
 
         if data.name is not None and data.name != account.name:
-            if self.repo.get_by_name(data.name):
+            if self.repo.get_by_name(data.name, self.user_id):
                 raise ValueError(f"Cash account '{data.name}' already exists")
 
         for field, val in data.model_dump(exclude_unset=True).items():
@@ -146,7 +145,7 @@ class CashService:
             True if deleted, False if not found.
         """
         account = self.repo.get_by_id(account_id)
-        if not account:
+        if not account or account.user_id != self.user_id:
             return False
         self.repo.delete(account)
         return True
@@ -161,7 +160,7 @@ class CashService:
             CashAnalysisResponse or None if not found.
         """
         account = self.repo.get_by_id(account_id)
-        if not account:
+        if not account or account.user_id != self.user_id:
             return None
         interest = self._calculate_interest(account.balance, account.interest_rate)
         return CashAnalysisResponse(
@@ -177,7 +176,7 @@ class CashService:
         Returns:
             CashPortfolioSummaryResponse with totals and per-type breakdown.
         """
-        accounts = self.repo.list_all()
+        accounts = self.repo.list_all(self.user_id)
         if not accounts:
             return CashPortfolioSummaryResponse(
                 total_balance=0.0,
