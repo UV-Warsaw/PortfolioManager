@@ -27,5 +27,6 @@ class CashAccount(SQLModel, table=True):
     interest_rate: float | None = Field(default=None)
     bank_name: str | None = Field(default=None)
     currency: str = Field(default="PLN")
+    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime | None = Field(default=None)

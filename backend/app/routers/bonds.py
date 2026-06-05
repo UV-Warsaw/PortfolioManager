@@ -39,9 +39,9 @@ def create_bond(
     Raises:
         400: If a bond with the same name already exists.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        service = BondService(session)
+        service = BondService(session, current_user["id"])
         return service.create_bond(bond_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -61,8 +61,8 @@ def list_bonds(
     Returns:
         List of all bonds.
     """
-    get_current_user(credentials, session)
-    service = BondService(session)
+    current_user = get_current_user(credentials, session)
+    service = BondService(session, current_user["id"])
     return service.list_bonds()
 
 
@@ -85,8 +85,8 @@ def get_bond(
     Raises:
         404: If bond not found.
     """
-    get_current_user(credentials, session)
-    service = BondService(session)
+    current_user = get_current_user(credentials, session)
+    service = BondService(session, current_user["id"])
     bond = service.get_bond(bond_id)
     if not bond:
         raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
@@ -115,9 +115,9 @@ def update_bond(
         404: If bond not found.
         400: If updating to a duplicate name.
     """
-    get_current_user(credentials, session)
+    current_user = get_current_user(credentials, session)
     try:
-        service = BondService(session)
+        service = BondService(session, current_user["id"])
         bond = service.update_bond(bond_id, bond_data)
         if not bond:
             raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
@@ -142,8 +142,8 @@ def delete_bond(
     Raises:
         404: If bond not found.
     """
-    get_current_user(credentials, session)
-    service = BondService(session)
+    current_user = get_current_user(credentials, session)
+    service = BondService(session, current_user["id"])
     if not service.delete_bond(bond_id):
         raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
 
@@ -167,8 +167,8 @@ def get_bond_analysis(
     Raises:
         404: If bond not found.
     """
-    get_current_user(credentials, session)
-    service = BondService(session)
+    current_user = get_current_user(credentials, session)
+    service = BondService(session, current_user["id"])
     bond = service.get_bond(bond_id)
     if not bond:
         raise HTTPException(status_code=404, detail=f"Bond {bond_id} not found")
@@ -189,8 +189,8 @@ def get_bonds_portfolio_summary(
     Returns:
         Portfolio summary with aggregated statistics.
     """
-    get_current_user(credentials, session)
-    service = BondService(session)
+    current_user = get_current_user(credentials, session)
+    service = BondService(session, current_user["id"])
     bonds = service.list_bonds()
     # Convert BondResponse to Bond for calculation service
     from app.models.bonds import Bond

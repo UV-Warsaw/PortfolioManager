@@ -17,48 +17,34 @@ class BondRepository(BaseRepository[Bond]):
         """
         super().__init__(Bond, session)
 
-    def get_by_name(self, name: str) -> Bond | None:
-        """Get a bond by its name.
-
-        Args:
-            name: The bond name to search for.
-
-        Returns:
-            The Bond if found, None otherwise.
+    def get_by_name(self, name: str, user_id: int) -> Bond | None:
         """
-        stmt = select(Bond).where(Bond.name == name)
+        Get a bond by its name scoped to the given user.
+        """
+        stmt = select(Bond).where(Bond.name == name, Bond.user_id == user_id)
         return self.session.exec(stmt).first()
 
-    def list_all(self) -> list[Bond]:
-        """Get all bonds ordered by purchase date (newest first).
-
-        Returns:
-            List of all bonds in descending purchase date order.
-        """
-        stmt = select(Bond).order_by(Bond.purchase_date.desc())
+    def list_all(self, user_id: int) -> list[Bond]:
+        """Get all bonds for the given user ordered by purchase date (newest first)."""
+        stmt = (
+            select(Bond)
+            .where(Bond.user_id == user_id)
+            .order_by(Bond.purchase_date.desc())
+        )
         return self.session.exec(stmt).all()
 
-    def get_total_value(self) -> float:
-        """Calculate total market value of all bonds.
-
-        Returns:
-            Sum of current_price * quantity for all bonds,
-            or purchase_price if current_price is NULL.
-        """
-        bonds = self.list_all()
+    def get_total_value(self, user_id: int) -> float:
+        """Calculate total market value of bonds for the given user."""
+        bonds = self.list_all(user_id)
         total = 0.0
         for bond in bonds:
             price = bond.redemption_price if bond.redemption_price else bond.principal
             total += price * bond.quantity
         return round(total, 2)
 
-    def get_by_id_for_user(self, bond_id: int) -> Bond | None:
-        """Get a bond by ID (basic retrieval).
-
-        Args:
-            bond_id: The bond ID.
-
-        Returns:
-            The Bond if found, None otherwise.
-        """
-        return self.session.get(Bond, bond_id)
+    def get_by_id_for_user(self, bond_id: int, user_id: int) -> Bond | None:
+        """Get a bond by ID scoped to the given user."""
+        bond = self.session.get(Bond, bond_id)
+        if bond is None or bond.user_id != user_id:
+            return None
+        return bond

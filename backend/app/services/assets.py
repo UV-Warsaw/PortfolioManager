@@ -18,13 +18,9 @@ from app.schemas.assets import (
 class OtherAssetService:
     """Service for OtherAsset business operations."""
 
-    def __init__(self, session: Session) -> None:
-        """Initialize OtherAssetService.
-
-        Args:
-            session: SQLModel database session.
-        """
+    def __init__(self, session: Session, user_id: int) -> None:
         self.repo = OtherAssetRepository(session)
+        self.user_id = user_id
 
     @staticmethod
     def _calculate_pnl(
@@ -62,7 +58,7 @@ class OtherAssetService:
         Raises:
             ValueError: If an asset with the same name already exists.
         """
-        if self.repo.get_by_name(data.name):
+        if self.repo.get_by_name(data.name, self.user_id):
             raise ValueError(f"Asset '{data.name}' already exists")
         asset = OtherAsset(
             name=data.name,
@@ -73,6 +69,7 @@ class OtherAssetService:
             purchase_price=data.purchase_price,
             mortgage_remaining=data.mortgage_remaining,
             notes=data.notes,
+            user_id=self.user_id,
         )
         self.repo.create(asset)
         return OtherAssetResponse.model_validate(asset)
@@ -87,15 +84,16 @@ class OtherAssetService:
             OtherAssetResponse or None if not found.
         """
         asset = self.repo.get_by_id(asset_id)
-        return OtherAssetResponse.model_validate(asset) if asset else None
+        if not asset or asset.user_id != self.user_id:
+            return None
+        return OtherAssetResponse.model_validate(asset)
 
     def list_all(self) -> list[OtherAssetResponse]:
-        """Get all manually-valued assets.
-
-        Returns:
-            List of all assets as OtherAssetResponse objects.
-        """
-        return [OtherAssetResponse.model_validate(a) for a in self.repo.list_all()]
+        """Get all manually-valued assets for the current user."""
+        return [
+            OtherAssetResponse.model_validate(a)
+            for a in self.repo.list_all(self.user_id)
+        ]
 
     def update(
         self, asset_id: int, data: OtherAssetUpdate
@@ -113,10 +111,10 @@ class OtherAssetService:
             ValueError: If updating name to one that already exists.
         """
         asset = self.repo.get_by_id(asset_id)
-        if not asset:
+        if not asset or asset.user_id != self.user_id:
             return None
         if data.name is not None and data.name != asset.name:
-            if self.repo.get_by_name(data.name):
+            if self.repo.get_by_name(data.name, self.user_id):
                 raise ValueError(f"Asset '{data.name}' already exists")
         for field, val in data.model_dump(exclude_unset=True).items():
             setattr(asset, field, val)
@@ -134,7 +132,7 @@ class OtherAssetService:
             True if deleted, False if not found.
         """
         asset = self.repo.get_by_id(asset_id)
-        if not asset:
+        if not asset or asset.user_id != self.user_id:
             return False
         self.repo.delete(asset)
         return True
@@ -149,7 +147,7 @@ class OtherAssetService:
             OtherAssetAnalysisResponse or None if not found.
         """
         asset = self.repo.get_by_id(asset_id)
-        if not asset:
+        if not asset or asset.user_id != self.user_id:
             return None
         pnl = self._calculate_pnl(
             asset.current_value, asset.quantity, asset.purchase_price
@@ -182,7 +180,7 @@ class OtherAssetService:
         Returns:
             OtherAssetsPortfolioSummaryResponse with totals and per-class breakdown.
         """
-        assets = self.repo.list_all()
+        assets = self.repo.list_all(self.user_id)
         if not assets:
             return OtherAssetsPortfolioSummaryResponse(
                 total_value=0.0,

@@ -201,22 +201,6 @@ export const EmergencyFundCard: React.FC<Props> = ({ token, refreshKey }) => {
               value={data.emergency_fund}
               bold
             />
-            <div
-              style={{
-                height: '1px',
-                background: 'var(--glass-border)',
-                margin: '2px 0',
-              }}
-            />
-            <TextRow
-              label="Your monthly expenses"
-              text={data.monthly_expenses > 0 ? formatPLN(data.monthly_expenses) : 'Not set'}
-            />
-            <TextRow
-              label="Emergency fund coverage"
-              text={data.monthly_expenses > 0 ? `${data.months_covered.toFixed(1)} months` : '—'}
-              highlight={data.monthly_expenses > 0 ? color : undefined}
-            />
           </div>
 
           {/* Action hint for critical */}
@@ -272,34 +256,6 @@ const BreakdownRow: React.FC<RowProps> = ({ label, value, bold }) => (
       }}
     >
       {formatPLN(value)}
-    </span>
-  </div>
-)
-
-interface TextRowProps {
-  label: string
-  text: string
-  highlight?: string
-}
-
-const TextRow: React.FC<TextRowProps> = ({ label, text, highlight }) => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '8px',
-    }}
-  >
-    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{label}</span>
-    <span
-      style={{
-        fontSize: '13px',
-        fontWeight: 600,
-        color: highlight ?? 'var(--text-primary)',
-      }}
-    >
-      {text}
     </span>
   </div>
 )

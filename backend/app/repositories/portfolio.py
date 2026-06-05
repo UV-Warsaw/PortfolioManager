@@ -22,6 +22,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         ticker: str | None,
         quantity: float | None,
         account: str | None,
+        user_id: int,
     ) -> bool:
         """Return True if a matching transaction already exists in the database."""
         stmt = select(Transaction).where(
@@ -29,10 +30,11 @@ class TransactionRepository(BaseRepository[Transaction]):
             Transaction.ticker == ticker,
             Transaction.quantity == quantity,
             Transaction.account == account,
+            Transaction.user_id == user_id,
         )
         return self.session.exec(stmt).first() is not None
 
-    def bulk_create(self, records: list[dict]) -> list[Transaction]:
+    def bulk_create(self, records: list[dict], user_id: int) -> list[Transaction]:
         """Insert a list of transaction dicts without deduplication checking."""
         created: list[Transaction] = []
         for rec in records:
@@ -49,6 +51,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 amount=rec.get("amount"),
                 raw=rec.get("raw"),
                 account=rec.get("account"),
+                user_id=user_id,
             )
             self.session.add(tx)
             created.append(tx)
@@ -58,7 +61,7 @@ class TransactionRepository(BaseRepository[Transaction]):
         return created
 
     def bulk_create_with_dedup(
-        self, records: list[dict]
+        self, records: list[dict], user_id: int
     ) -> tuple[list[Transaction], int]:
         """Insert transactions, skipping duplicates keyed by (date, ticker, quantity, account).
 
@@ -72,7 +75,11 @@ class TransactionRepository(BaseRepository[Transaction]):
             if isinstance(date_val, str):
                 date_val = datetime.fromisoformat(date_val)
             if self._exists(
-                date_val, rec.get("ticker"), rec.get("quantity"), rec.get("account")
+                date_val,
+                rec.get("ticker"),
+                rec.get("quantity"),
+                rec.get("account"),
+                user_id,
             ):
                 skipped += 1
                 continue
@@ -86,6 +93,7 @@ class TransactionRepository(BaseRepository[Transaction]):
                 amount=rec.get("amount"),
                 raw=rec.get("raw"),
                 account=rec.get("account"),
+                user_id=user_id,
             )
             self.session.add(tx)
             created.append(tx)
@@ -94,25 +102,20 @@ class TransactionRepository(BaseRepository[Transaction]):
             self.session.refresh(tx)
         return created, skipped
 
-    def delete_by_account(self, account: str) -> int:
-        """Delete all transactions for the given account and return the deleted row count.
-
-        Used during re-import to clear stale data before inserting fresh records.
-
-        Args:
-            account: Account identifier (IKE, PLN, USD).
-
-        Returns:
-            Number of rows deleted.
-        """
+    def delete_by_account(self, account: str, user_id: int) -> int:
+        """Delete all transactions for the given user+account and return deleted row count."""
         from sqlmodel import delete as sql_delete
 
-        stmt = sql_delete(Transaction).where(Transaction.account == account)
+        stmt = sql_delete(Transaction).where(
+            Transaction.account == account, Transaction.user_id == user_id
+        )
         result = self.session.exec(stmt)
         self.session.commit()
         return result.rowcount
 
-    def get_holdings(self, account: str | None = None) -> list[dict]:
+    def get_holdings(
+        self, account: str | None = None, user_id: int | None = None
+    ) -> list[dict]:
         """Return active holdings aggregated per ticker and account.
 
         Buy quantities are summed; sell quantities are subtracted.
@@ -136,6 +139,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             .where(Transaction.quantity.is_not(None))
             .group_by(Transaction.ticker, Transaction.account)
         )
+        if user_id is not None:
+            stmt = stmt.where(Transaction.user_id == user_id)
         if account:
             stmt = stmt.where(Transaction.account == account)
 
@@ -146,17 +151,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[2] is not None and row[2] > 0
         ]
 
-    def get_account_values(self) -> dict[str, float]:
-        """Return current market value per account — sum of market_price * quantity.
-
-        Only open BUY positions with a non-null market_price and ticker are included.
-        Cash-operation rows (ticker IS NULL or type not BUY/Stock purchase) are excluded.
-
-        Values are stored in PLN — USD prices are converted during import.
-
-        Returns:
-            Dict mapping account name to current market value (PLN).
-        """
+    def get_account_values(self, user_id: int | None = None) -> dict[str, float]:
+        """Return current market value per account for the given user."""
         market_val = func.sum(Transaction.market_price * Transaction.quantity).label(
             "market_value"
         )
@@ -171,6 +167,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             )
             .group_by(Transaction.account)
         )
+        if user_id is not None:
+            stmt = stmt.where(Transaction.user_id == user_id)
         rows = self.session.exec(stmt).all()
         return {
             row[0]: round(float(row[1]), 2)
@@ -178,14 +176,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[0] is not None and row[1] is not None
         }
 
-    def get_cost_basis(self) -> dict[str, float]:
-        """Return cost basis per account — sum of price * quantity for BUY transactions.
-
-        Cost basis represents the total amount invested in open positions.
-
-        Returns:
-            Dict mapping account name to cost basis (PLN).
-        """
+    def get_cost_basis(self, user_id: int | None = None) -> dict[str, float]:
+        """Return cost basis per account for the given user."""
         cost_val = func.sum(Transaction.price * Transaction.quantity).label("cost")
 
         stmt = (
@@ -198,6 +190,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             )
             .group_by(Transaction.account)
         )
+        if user_id is not None:
+            stmt = stmt.where(Transaction.user_id == user_id)
         rows = self.session.exec(stmt).all()
         return {
             row[0]: round(float(row[1]), 2)
@@ -205,18 +199,10 @@ class TransactionRepository(BaseRepository[Transaction]):
             if row[0] is not None and row[1] is not None
         }
 
-    def get_top_holdings(self, limit: int = 10) -> list[tuple[str, float]]:
-        """Return the top N holdings by current market value across all accounts.
-
-        Market value is computed as sum(market_price * quantity) for BUY/Stock purchase rows.
-        Only positions with a non-null market_price and ticker are considered.
-
-        Args:
-            limit: Maximum number of holdings to return.
-
-        Returns:
-            List of (ticker, market_value) tuples ordered by market_value descending.
-        """
+    def get_top_holdings(
+        self, limit: int = 10, user_id: int | None = None
+    ) -> list[tuple[str, float]]:
+        """Return the top N holdings by current market value for the given user."""
         market_val = func.sum(Transaction.market_price * Transaction.quantity).label(
             "market_value"
         )
@@ -234,6 +220,8 @@ class TransactionRepository(BaseRepository[Transaction]):
             .order_by(market_val.desc())
             .limit(limit)
         )
+        if user_id is not None:
+            stmt = stmt.where(Transaction.user_id == user_id)
         rows = self.session.exec(stmt).all()
         return [(row[0], round(float(row[1]), 2)) for row in rows if row[0] is not None]
 
@@ -251,6 +239,7 @@ class DividendRepository(BaseRepository[Dividend]):
         ticker: str | None,
         amount: float | None,
         account: str | None,
+        user_id: int,
     ) -> bool:
         """Return True if a matching dividend already exists in the database."""
         stmt = select(Dividend).where(
@@ -258,10 +247,11 @@ class DividendRepository(BaseRepository[Dividend]):
             Dividend.ticker == ticker,
             Dividend.amount == amount,
             Dividend.account == account,
+            Dividend.user_id == user_id,
         )
         return self.session.exec(stmt).first() is not None
 
-    def bulk_create(self, records: list[dict]) -> list[Dividend]:
+    def bulk_create(self, records: list[dict], user_id: int) -> list[Dividend]:
         """Insert a list of dividend dicts without deduplication checking."""
         created: list[Dividend] = []
         for rec in records:
@@ -275,6 +265,7 @@ class DividendRepository(BaseRepository[Dividend]):
                 currency=rec.get("currency"),
                 raw=rec.get("raw"),
                 account=rec.get("account"),
+                user_id=user_id,
             )
             self.session.add(div)
             created.append(div)
@@ -283,30 +274,21 @@ class DividendRepository(BaseRepository[Dividend]):
             self.session.refresh(div)
         return created
 
-    def delete_by_account(self, account: str) -> int:
-        """Delete all dividends for the given account and return the deleted row count.
-
-        Used during re-import to clear stale data before inserting fresh records.
-
-        Args:
-            account: Account identifier (IKE, PLN, USD).
-
-        Returns:
-            Number of rows deleted.
-        """
+    def delete_by_account(self, account: str, user_id: int) -> int:
+        """Delete all dividends for the given user+account."""
         from sqlmodel import delete as sql_delete
 
-        stmt = sql_delete(Dividend).where(Dividend.account == account)
+        stmt = sql_delete(Dividend).where(
+            Dividend.account == account, Dividend.user_id == user_id
+        )
         result = self.session.exec(stmt)
         self.session.commit()
         return result.rowcount
 
-    def bulk_create_with_dedup(self, records: list[dict]) -> tuple[list[Dividend], int]:
-        """Insert dividends, skipping duplicates keyed by (date, ticker, amount, account).
-
-        Returns:
-            A tuple of (created_dividends, skipped_count).
-        """
+    def bulk_create_with_dedup(
+        self, records: list[dict], user_id: int
+    ) -> tuple[list[Dividend], int]:
+        """Insert dividends, skipping duplicates keyed by (date, ticker, amount, account)."""
         created: list[Dividend] = []
         skipped = 0
         for rec in records:
@@ -314,7 +296,11 @@ class DividendRepository(BaseRepository[Dividend]):
             if isinstance(date_val, str):
                 date_val = datetime.fromisoformat(date_val)
             if self._exists(
-                date_val, rec.get("ticker"), rec.get("amount"), rec.get("account")
+                date_val,
+                rec.get("ticker"),
+                rec.get("amount"),
+                rec.get("account"),
+                user_id,
             ):
                 skipped += 1
                 continue
@@ -325,6 +311,7 @@ class DividendRepository(BaseRepository[Dividend]):
                 currency=rec.get("currency"),
                 raw=rec.get("raw"),
                 account=rec.get("account"),
+                user_id=user_id,
             )
             self.session.add(div)
             created.append(div)
@@ -333,15 +320,10 @@ class DividendRepository(BaseRepository[Dividend]):
             self.session.refresh(div)
         return created, skipped
 
-    def get_yearly_summary(self, account: str | None = None) -> list[dict]:
-        """Get yearly dividend summary aggregated by year.
-
-        Args:
-            account: Optional account filter (IKE, PLN, USD).
-
-        Returns:
-            List of dicts with keys 'year' and 'total', ordered by year.
-        """
+    def get_yearly_summary(
+        self, account: str | None = None, user_id: int | None = None
+    ) -> list[dict]:
+        """Get yearly dividend summary for the given user."""
         from sqlalchemy import extract
 
         year_col = extract("year", Dividend.date).label("year")
@@ -349,6 +331,8 @@ class DividendRepository(BaseRepository[Dividend]):
 
         stmt = select(year_col, total_col).where(Dividend.date.is_not(None))
 
+        if user_id is not None:
+            stmt = stmt.where(Dividend.user_id == user_id)
         if account:
             stmt = stmt.where(Dividend.account == account)
 
@@ -361,17 +345,12 @@ class DividendRepository(BaseRepository[Dividend]):
         ]
 
     def get_monthly_timeline(
-        self, year: int | None = None, account: str | None = None
+        self,
+        year: int | None = None,
+        account: str | None = None,
+        user_id: int | None = None,
     ) -> list[dict]:
-        """Get monthly dividend timeline.
-
-        Args:
-            year: Optional year filter — returns 12 months for that year.
-            account: Optional account filter (IKE, PLN, USD).
-
-        Returns:
-            List of dicts with keys 'month' and 'total', ordered by month (1-12).
-        """
+        """Get monthly dividend timeline for the given user."""
         from sqlalchemy import extract
 
         month_col = extract("month", Dividend.date).label("month")
@@ -379,10 +358,11 @@ class DividendRepository(BaseRepository[Dividend]):
 
         stmt = select(month_col, total_col).where(Dividend.date.is_not(None))
 
+        if user_id is not None:
+            stmt = stmt.where(Dividend.user_id == user_id)
         if year:
             year_col = extract("year", Dividend.date)
             stmt = stmt.where(year_col == year)
-
         if account:
             stmt = stmt.where(Dividend.account == account)
 

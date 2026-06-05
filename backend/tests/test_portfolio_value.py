@@ -8,6 +8,9 @@ from app.models.portfolio import Transaction
 from app.repositories.portfolio import TransactionRepository
 from app.schemas.portfolio import PortfolioValueResponse, TopHoldingsResponse
 
+# Fixed user id matching the first registered user (id=1) in a fresh in-memory DB.
+TEST_USER_ID = 1
+
 
 def _register_and_login(client: TestClient) -> str:
     """Register a test user and return a JWT token."""
@@ -319,9 +322,15 @@ def test_portfolio_value_cash_ops_not_counted(
                 quantity=10.0,
                 market_price=200.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
-                ticker=None, type="Dividend", quantity=None, amount=100.0, account="PLN"
+                ticker=None,
+                type="Dividend",
+                quantity=None,
+                amount=100.0,
+                account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker=None,
@@ -329,6 +338,7 @@ def test_portfolio_value_cash_ops_not_counted(
                 quantity=None,
                 amount=5000.0,
                 account="IKE",
+                user_id=TEST_USER_ID,
             ),
         ]
     )
@@ -354,6 +364,7 @@ def test_portfolio_value_returns_per_account_values(
                 quantity=10.0,
                 market_price=200.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker="AAPL",
@@ -361,6 +372,7 @@ def test_portfolio_value_returns_per_account_values(
                 quantity=1.0,
                 market_price=1500.0,
                 account="IKE",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker="MSFT",
@@ -368,6 +380,7 @@ def test_portfolio_value_returns_per_account_values(
                 quantity=2.0,
                 market_price=1500.0,
                 account="USD",
+                user_id=TEST_USER_ID,
             ),
         ]
     )
@@ -398,6 +411,7 @@ def test_portfolio_value_total_matches_account_sum(
                 quantity=5.0,
                 market_price=110.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker="AAPL",
@@ -405,6 +419,7 @@ def test_portfolio_value_total_matches_account_sum(
                 quantity=3.0,
                 market_price=300.0,
                 account="IKE",
+                user_id=TEST_USER_ID,
             ),
         ]
     )
@@ -457,6 +472,7 @@ def test_top_holdings_ordered_descending(
                 quantity=1.0,
                 market_price=500.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker="CDR",
@@ -464,6 +480,7 @@ def test_top_holdings_ordered_descending(
                 quantity=1.0,
                 market_price=3000.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
             Transaction(
                 ticker="MSFT",
@@ -471,6 +488,7 @@ def test_top_holdings_ordered_descending(
                 quantity=1.0,
                 market_price=1500.0,
                 account="PLN",
+                user_id=TEST_USER_ID,
             ),
         ]
     )
@@ -497,6 +515,7 @@ def test_top_holdings_max_ten_items(client: TestClient, db_session: Session) -> 
                 quantity=1.0,
                 market_price=float(i * 100),
                 account="PLN",
+                user_id=TEST_USER_ID,
             )
             for i in range(1, 16)
         ]

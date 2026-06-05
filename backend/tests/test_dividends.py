@@ -7,6 +7,9 @@ from sqlmodel import Session
 from app.repositories.portfolio import DividendRepository
 from app.services.portfolio import get_dividend_summary, get_dividend_timeline
 
+# Fixed user id matching the first registered user (id=1) in a fresh in-memory DB.
+TEST_USER_ID = 1
+
 
 def _make_dividend(
     ticker: str = "AAPL",
@@ -49,7 +52,9 @@ class TestDividendRepository:
     def test_get_yearly_summary_single_dividend(self, db_session: Session) -> None:
         """get_yearly_summary returns one entry for a single dividend."""
         repo = DividendRepository(db_session)
-        repo.bulk_create([_make_dividend(date=datetime(2023, 3, 15, 0, 0, 0))])
+        repo.bulk_create(
+            [_make_dividend(date=datetime(2023, 3, 15, 0, 0, 0))], user_id=TEST_USER_ID
+        )
         result = repo.get_yearly_summary()
         assert len(result) == 1
         assert result[0]["year"] == 2023
@@ -63,7 +68,8 @@ class TestDividendRepository:
                 _make_dividend(amount=10.0, date=datetime(2022, 3, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2022, 6, 15, 0, 0, 0)),
                 _make_dividend(amount=25.0, date=datetime(2023, 3, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = repo.get_yearly_summary()
         assert len(result) == 2
@@ -83,7 +89,8 @@ class TestDividendRepository:
                 _make_dividend(
                     amount=20.0, account="PLN", date=datetime(2023, 3, 15, 0, 0, 0)
                 ),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = repo.get_yearly_summary(account="USD")
         assert len(result) == 1
@@ -103,7 +110,8 @@ class TestDividendRepository:
                 _make_dividend(amount=10.0, date=datetime(2022, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 3, 15, 0, 0, 0)),
                 _make_dividend(amount=25.0, date=datetime(2023, 6, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = repo.get_monthly_timeline()
         assert len(result) == 3
@@ -118,7 +126,8 @@ class TestDividendRepository:
                 _make_dividend(amount=10.0, date=datetime(2022, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 3, 15, 0, 0, 0)),
                 _make_dividend(amount=25.0, date=datetime(2023, 6, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = repo.get_monthly_timeline(year=2023)
         assert len(result) == 2
@@ -140,7 +149,8 @@ class TestDividendRepository:
                 _make_dividend(
                     amount=20.0, account="PLN", date=datetime(2023, 3, 15, 0, 0, 0)
                 ),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = repo.get_monthly_timeline(account="USD")
         assert len(result) == 1
@@ -162,7 +172,8 @@ class TestDividendService:
             [
                 _make_dividend(amount=10.0, date=datetime(2023, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 6, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = get_dividend_summary(db_session)
         assert len(result) == 1
@@ -182,7 +193,8 @@ class TestDividendService:
                 _make_dividend(amount=10.0, date=datetime(2022, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 3, 15, 0, 0, 0)),
                 _make_dividend(amount=25.0, date=datetime(2023, 6, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         result = get_dividend_timeline(db_session, year=2023)
         assert len(result) == 2
@@ -210,7 +222,8 @@ class TestDividendEndpoints:
             [
                 _make_dividend(amount=10.0, date=datetime(2023, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 6, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         response = client.get(
             "/portfolio/dividends/summary",
@@ -236,7 +249,8 @@ class TestDividendEndpoints:
                 _make_dividend(
                     amount=20.0, account="PLN", date=datetime(2023, 3, 15, 0, 0, 0)
                 ),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         response = client.get(
             "/portfolio/dividends/summary?account=USD",
@@ -277,7 +291,8 @@ class TestDividendEndpoints:
             [
                 _make_dividend(amount=10.0, date=datetime(2023, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 3, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         response = client.get(
             "/portfolio/dividends/timeline",
@@ -299,7 +314,8 @@ class TestDividendEndpoints:
             [
                 _make_dividend(amount=10.0, date=datetime(2022, 1, 15, 0, 0, 0)),
                 _make_dividend(amount=15.0, date=datetime(2023, 3, 15, 0, 0, 0)),
-            ]
+            ],
+            user_id=TEST_USER_ID,
         )
         response = client.get(
             "/portfolio/dividends/timeline?year=2023",

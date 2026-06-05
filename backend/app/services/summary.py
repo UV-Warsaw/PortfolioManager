@@ -48,9 +48,10 @@ logger = logging.getLogger("portfolio_backend.services.summary")
 class SummaryService:
     """Service for portfolio summary and dashboard data."""
 
-    def __init__(self, session: Session) -> None:
-        """Initialize summary service with a database session."""
+    def __init__(self, session: Session, user_id: int) -> None:
+        """Initialize summary service with a database session and user id."""
         self.session = session
+        self.user_id = user_id
         self.tx_repo = TransactionRepository(session)
         self.div_repo = DividendRepository(session)
 
@@ -65,9 +66,9 @@ class SummaryService:
         Returns:
             Dict with portfolio_value, total_invested, profit, and top_holdings.
         """
-        accounts = self.tx_repo.get_account_values()
-        top_holdings = self.tx_repo.get_top_holdings(limit=10)
-        holdings = self.tx_repo.get_holdings(account=account)
+        accounts = self.tx_repo.get_account_values(self.user_id)
+        top_holdings = self.tx_repo.get_top_holdings(limit=10, user_id=self.user_id)
+        holdings = self.tx_repo.get_holdings(account=account, user_id=self.user_id)
 
         portfolio_value = sum(accounts.values())
 
@@ -77,6 +78,7 @@ class SummaryService:
                 Transaction.ticker == holding["ticker"],
                 Transaction.type.in_(["BUY", "Stock purchase"]),
                 Transaction.account == holding["account"],
+                Transaction.user_id == self.user_id,
             )
             if account:
                 stmt = stmt.where(Transaction.account == account)
@@ -109,7 +111,9 @@ class SummaryService:
         Returns:
             List of DividendSummaryResponse ordered by year.
         """
-        summaries = self.div_repo.get_yearly_summary(account=account)
+        summaries = self.div_repo.get_yearly_summary(
+            account=account, user_id=self.user_id
+        )
         return [
             DividendSummaryResponse(year=s["year"], total=s["total"]) for s in summaries
         ]
@@ -126,7 +130,9 @@ class SummaryService:
         Returns:
             List of DividendTimelineResponse ordered by month.
         """
-        timelines = self.div_repo.get_monthly_timeline(year=year, account=account)
+        timelines = self.div_repo.get_monthly_timeline(
+            year=year, account=account, user_id=self.user_id
+        )
         return [
             DividendTimelineResponse(month=t["month"], total=t["total"])
             for t in timelines
@@ -144,22 +150,22 @@ class SummaryService:
         from app.services.cash import CashService
 
         # Stocks
-        accounts = self.tx_repo.get_account_values()
+        accounts = self.tx_repo.get_account_values(self.user_id)
         stocks_value = round(sum(accounts.values()), 2)
 
         # Bonds — use proper compound-interest calculation
         bond_repo = BondRepository(self.session)
-        bonds = bond_repo.list_all()
+        bonds = bond_repo.list_all(self.user_id)
         bonds_summary = BondCalculationService.calculate_portfolio_summary(bonds)
         bonds_value = bonds_summary.current_total_value
 
         # Cash
-        cash_svc = CashService(self.session)
+        cash_svc = CashService(self.session, self.user_id)
         cash_summary = cash_svc.portfolio_summary()
         cash_value = round(cash_summary.total_balance, 2)
 
         # Crypto & Real Estate (from other assets)
-        asset_svc = OtherAssetService(self.session)
+        asset_svc = OtherAssetService(self.session, self.user_id)
         other_summary = asset_svc.portfolio_summary()
         by_class = other_summary.assets_by_class
 

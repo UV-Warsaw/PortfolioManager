@@ -284,3 +284,55 @@ body {
   }
 }
 
+/* Responsive layout utilities used by Bonds / Cash / OtherAssets */
+.page-section {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.sidebar-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+}
+
+.two-col-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.three-col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.two-col-grid-sm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .page-section {
+    padding: 12px;
+  }
+
+  .sidebar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .two-col-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .three-col-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+
+  .two-col-grid-sm {
+    grid-template-columns: 1fr;
+  }
+}
+
