@@ -214,7 +214,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px' }}>
+    <div className="page-section">
       {/* Header */}
       <div
         style={{
@@ -388,13 +388,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
           )}
 
           {/* Main Content */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '300px 1fr',
-              gap: '24px',
-            }}
-          >
+          <div className="sidebar-grid">
             {/* Bonds List */}
             <div
               style={{
@@ -534,13 +528,7 @@ export const Bonds: React.FC<BondsProps> = ({ token }) => {
                   </div>
 
                   {/* Stats Grid */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
-                      gap: '16px',
-                    }}
-                  >
+                  <div className="two-col-grid">
                     <div>
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
                         CURRENT VALUE

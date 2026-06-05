@@ -151,7 +151,7 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
   if (loading) return <Loading />
 
   return (
-    <div style={{ minHeight: '100vh', padding: '24px' }}>
+    <div className="page-section">
       {/* Header */}
       <div
         style={{
@@ -284,7 +284,7 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
           )}
 
           {/* Main Content */}
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px' }}>
+          <div className="sidebar-grid">
             {/* Account List */}
             <div
               style={{
@@ -433,9 +433,7 @@ export const Cash: React.FC<CashProps> = ({ token }) => {
                   </div>
 
                   {/* Stats Grid */}
-                  <div
-                    style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}
-                  >
+                  <div className="two-col-grid">
                     <div>
                       <span style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
                         BALANCE

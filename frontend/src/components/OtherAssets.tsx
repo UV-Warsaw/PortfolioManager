@@ -208,7 +208,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+    <div className="page-section" style={{ maxWidth: '900px', margin: '0 auto' }}>
       {error && (
         <div
           style={{
@@ -331,7 +331,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
                 </div>
 
                 {isSelected && (
-                  <div style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <div className="two-col-grid-sm" style={{ marginTop: '14px', borderTop: '1px solid var(--glass-border)', paddingTop: '14px' }}>
                     {a.quantity != null && (
                       <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
                         Quantity: <strong style={{ color: 'var(--text-primary)' }}>{a.quantity} {a.name}</strong>
@@ -423,7 +423,7 @@ export const OtherAssets: React.FC<Props> = ({ token, section }) => {
 
         {/* Real estate summary */}
         {realEstateAssets.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+          <div className="three-col-grid" style={{ marginBottom: '20px' }}>
             <StatCard label="Total Property Value" value={fmtSimple(totalPropertyValue) + ' PLN'} />
             <StatCard label="Total Mortgage" value={fmtSimple(totalMortgage) + ' PLN'} valueColor="#f87171" />
             <StatCard
